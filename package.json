@@ -1,7 +1,7 @@
 {
   "name": "mino-console",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Mino Console — platform admin SPA",
   "author": "pengchengluoyi@126.com",
   "scripts": {
