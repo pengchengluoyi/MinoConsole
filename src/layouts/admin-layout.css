@@ -1,0 +1,269 @@
+.admin-shell {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  background: var(--mo-bg);
+  color: var(--mo-text);
+}
+
+.admin-sidebar {
+  width: 232px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--mo-card);
+  border-right: 1px solid var(--mo-border);
+  min-height: 0;
+}
+
+.admin-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 16px 12px;
+  flex-shrink: 0;
+}
+
+.admin-brand-mark {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--mo-primary-soft);
+  color: var(--mo-primary);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.admin-brand-copy {
+  min-width: 0;
+}
+
+.admin-brand-copy strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.admin-brand-copy span {
+  display: block;
+  margin-top: 2px;
+  color: var(--mo-muted);
+  font-size: 11px;
+}
+
+.admin-nav {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 10px 16px;
+}
+
+.admin-nav-group {
+  margin-bottom: 14px;
+}
+
+.admin-nav-kicker {
+  padding: 8px 10px 6px;
+  color: var(--mo-muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.admin-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--mo-text);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-nav-btn:hover {
+  background: var(--mo-soft);
+}
+
+.admin-nav-btn.is-active {
+  background: var(--mo-primary-soft);
+  color: var(--el-color-primary-dark-2);
+  font-weight: 700;
+}
+
+.admin-nav-btn .el-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.admin-body {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-topbar {
+  flex-shrink: 0;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  background: var(--mo-card);
+  border-bottom: 1px solid var(--mo-border);
+}
+
+.admin-menu-btn {
+  display: none;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--mo-border);
+  border-radius: 10px;
+  background: var(--mo-card);
+  color: var(--mo-text);
+  cursor: pointer;
+  place-items: center;
+}
+
+.admin-topbar-title {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.admin-topbar-spacer {
+  flex: 1;
+}
+
+.admin-nexus-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: #ecfdf5;
+  color: #047857;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.admin-nexus-pill.is-off {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.admin-nexus-pill i {
+  width: 7px;
+  height: 7px;
+  border-radius: 99px;
+  background: currentColor;
+}
+
+.admin-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.admin-user-meta {
+  min-width: 0;
+  text-align: right;
+}
+
+.admin-user-meta strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 180px;
+}
+
+.admin-user-meta span {
+  display: block;
+  color: var(--mo-muted);
+  font-size: 11px;
+}
+
+.admin-main {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 20px 28px;
+  position: relative;
+}
+
+.admin-overlay-portal {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  min-height: 0;
+}
+
+.admin-overlay-portal:empty {
+  display: none;
+}
+
+.admin-scrim {
+  display: none;
+}
+
+.admin-main > * {
+  width: 100%;
+  max-width: none;
+}
+
+@media (max-width: 900px) {
+  .admin-menu-btn {
+    display: grid;
+  }
+
+  .admin-sidebar {
+    position: fixed;
+    z-index: 40;
+    top: 0;
+    left: 0;
+    height: 100%;
+    transform: translateX(-100%);
+    transition: transform 0.18s ease;
+    box-shadow: var(--mo-shadow);
+  }
+
+  .admin-shell.is-nav-open .admin-sidebar {
+    transform: none;
+  }
+
+  .admin-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 35;
+    background: rgba(15, 23, 42, 0.28);
+  }
+
+  .admin-user-meta {
+    display: none;
+  }
+
+  .admin-main {
+    padding: 12px 14px 24px;
+  }
+}
