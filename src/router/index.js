@@ -11,7 +11,9 @@ const AccountsPage = () => import('../views/Settings/AccountsPage.vue')
 const PermissionsPage = () => import('../views/Permissions/index.vue')
 const AuditPage = () => import('../views/Audit/index.vue')
 const RolesPage = () => import('../views/Settings/RolesPage.vue')
+const SkillsPage = () => import('../views/Settings/SkillsPage.vue')
 const PacksPage = () => import('../views/Settings/PacksPage.vue')
+const KnowledgePage = () => import('../views/Knowledge/index.vue')
 const KeysPage = () => import('../views/Settings/KeysPage.vue')
 const SystemPage = () => import('../views/Settings/SystemPage.vue')
 const NetworkPage = () => import('../views/Network/index.vue')
@@ -47,9 +49,22 @@ const routes = [
       { path: 'permissions', name: 'Permissions', component: PermissionsPage, meta: { title: '权限配置' } },
       { path: 'access', redirect: { path: '/permissions', query: { tab: 'matrix' } } },
       { path: 'audit', name: 'Audit', component: AuditPage, meta: { title: '操作记录' } },
-      { path: 'roles', name: 'Roles', component: RolesPage, meta: { title: '产品角色' } },
+      { path: 'skills', name: 'Skills', component: SkillsPage, meta: { title: '技能' } },
+      {
+        path: 'roles',
+        name: 'Roles',
+        component: RolesPage,
+        meta: { title: '角色' },
+        beforeEnter: (to) => {
+          if (to.query.tab === 'skills') {
+            return { path: '/skills', query: { skill: to.query.skill || to.query.role || undefined } }
+          }
+          return true
+        },
+      },
       { path: 'stack', name: 'Stack', component: LayerStack, meta: { title: '编排' } },
       { path: 'packs', name: 'Packs', component: PacksPage, meta: { title: '扩展包' } },
+      { path: 'knowledge', name: 'Knowledge', component: KnowledgePage, meta: { title: '知识库' } },
       { path: 'mail', name: 'Mail', component: KeysPage, meta: { title: '发信' } },
       { path: 'plugins', name: 'Plugins', component: PluginsPage, meta: { title: '插件策略' } },
       { path: 'plugins/:pluginId', name: 'PluginDetail', component: PluginDetail, meta: { title: '插件策略' } },
@@ -60,10 +75,18 @@ const routes = [
       { path: 'settings', redirect: '/dashboard' },
       { path: 'settings/overview', redirect: '/dashboard' },
       { path: 'settings/accounts', redirect: '/members' },
-      { path: 'settings/roles', redirect: keepQuery('/roles') },
+      {
+        path: 'settings/roles',
+        redirect: (to) => (
+          to.query.tab === 'skills'
+            ? { path: '/skills', query: { skill: to.query.skill || to.query.role || undefined } }
+            : { path: '/roles', query: { role: to.query.role || undefined } }
+        ),
+      },
       { path: 'settings/stack', redirect: '/stack' },
-      { path: 'settings/skills', redirect: { path: '/roles', query: { tab: 'skills' } } },
+      { path: 'settings/skills', redirect: (to) => ({ path: '/skills', query: { skill: to.query.skill || undefined } }) },
       { path: 'settings/packs', redirect: keepQuery('/packs') },
+      { path: 'settings/knowledge', redirect: '/knowledge' },
       { path: 'settings/keys', redirect: '/mail' },
       { path: 'settings/system', redirect: '/health' },
     ],

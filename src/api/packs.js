@@ -9,13 +9,12 @@ export const listPackKinds = () =>
 
 /**
  * 条目列表
- * @param {object} params { kind, q, provider, lifecycle, root, app_id, fixture }
- *   fixture=1 时返回样例数据，前端可在后端未就绪 / 无设备时开发
+ * @param {object} params { kind, q, lifecycle, platform, category }
  */
 export const listPacks = (params = {}) =>
   request({ url: '/packs', method: 'get', params })
 
-/** 条目详情（含原始 YAML）。uid 形如 builtin/recovery/screen_asleep_or_locked */
+/** 条目详情。uid 形如 builtin/recovery/screen_asleep_or_locked */
 const packPath = (uid) => String(uid || '').split('/').filter(Boolean).map(encodeURIComponent).join('/')
 
 export const getPack = (uid, params = {}) =>
@@ -25,23 +24,24 @@ export const getPack = (uid, params = {}) =>
 export const getPacksHealth = () =>
   request({ url: '/packs/health', method: 'get' })
 
-/** 改完 YAML 立即重载（不必重启服务） */
+/** 重载 catalog_entries 到内存 */
 export const reloadPacks = () =>
   request({ url: '/packs/reload', method: 'post' })
 
-/** 启停 / 改生命周期：{ lifecycle?: 'draft'|'review'|'active'|'deprecated', enabled?: boolean } */
+/** 整条覆盖保存。body 含 display_name / description / platforms / payload 等 */
+export const updatePack = async (uid, data) => {
+  const res = await request({ url: `/packs/${packPath(uid)}`, method: 'put', data })
+  recordAudit('更新扩展包', uid)
+  return res
+}
+
+/** 启停：{ status?: 'pending'|'active'|'deprecated' } */
 export const setPackLifecycle = async (uid, data) => {
   const res = await request({ url: `/packs/${packPath(uid)}/lifecycle`, method: 'post', data })
   recordAudit('更改扩展包状态', uid)
   return res
 }
 
-/** 保存整份 YAML（校验不过后端会 400，不落盘） */
-export const savePackYaml = async (uid, rawYaml) => {
-  const res = await request({ url: `/packs/${packPath(uid)}`, method: 'put', data: { raw_yaml: rawYaml } })
-  recordAudit('保存扩展包 YAML', uid)
-  return res
-}
 
 /**
  * 单条预演。控制台永远 execute=0，不连设备。
@@ -57,14 +57,9 @@ export const dryRunPack = (uid, params = {}) => {
   })
 }
 
-/** 四个根的说明与条目数（新建时选落哪个根） */
-export const listPackRoots = (params = {}) =>
-  request({ url: '/packs/roots', method: 'get', params })
-
 /**
  * 新建条目
- * @param {object} data { kind, root, app_id?, pack_id?, id, owner?, raw_yaml?, overwrite? }
- *   raw_yaml 留空则后端按 kind 生成最小骨架（默认 lifecycle: draft）
+ * @param {object} data { kind, pack_id?, id }
  */
 export const createPack = async (data) => {
   const res = await request({ url: '/packs/create', method: 'post', data })

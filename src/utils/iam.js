@@ -29,7 +29,9 @@ export const CONSOLE_FEATURES = [
   { id: 'nodes', label: '节点与设备' },
   { id: 'members', label: '成员' },
   { id: 'access', label: '权限配置' },
-  { id: 'roles', label: '产品角色' },
+  { id: 'skills', label: '技能' },
+  { id: 'roles', label: '角色' },
+  { id: 'stack', label: '编排' },
   { id: 'packs', label: '扩展包' },
   { id: 'mail', label: '发信' },
   { id: 'system', label: '系统参数' },
@@ -47,7 +49,7 @@ export const STUDIO_FEATURES = [
 export const RBAC_MATRIX = {
   admin: {
     console: {
-      catalog: 'read', nodes: 'read', members: 'yes', access: 'yes', roles: 'yes', packs: 'yes',
+      catalog: 'read', nodes: 'read', members: 'yes', access: 'yes', skills: 'yes', roles: 'yes', stack: 'yes', packs: 'yes',
       mail: 'yes', system: 'yes',
     },
     studio: {
@@ -56,7 +58,7 @@ export const RBAC_MATRIX = {
   },
   user: {
     console: {
-      catalog: 'no', nodes: 'no', members: 'no', access: 'no', roles: 'no', packs: 'no',
+      catalog: 'no', nodes: 'no', members: 'no', access: 'no', skills: 'no', roles: 'no', stack: 'no', packs: 'no',
       mail: 'no', system: 'no',
     },
     studio: {

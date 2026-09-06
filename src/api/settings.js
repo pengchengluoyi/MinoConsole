@@ -163,6 +163,18 @@ export const chatAIRole = (data) =>
 export const saveRolePrompt = (roleId, data) =>
   request({ url: `/settings/ai/roles/${roleId}/prompt`, method: 'put', data })
 
+export const listAISkills = () =>
+  request({ url: '/settings/ai/skills', method: 'get' })
+
+export const getAISkill = (skillId) =>
+  request({ url: `/settings/ai/skills/${skillId}`, method: 'get' })
+
+export const createAISkill = (data) =>
+  request({ url: '/settings/ai/skills', method: 'post', data })
+
+export const saveAISkill = (skillId, data) =>
+  request({ url: `/settings/ai/skills/${skillId}`, method: 'put', data })
+
 export const listDispatchCalls = (params = {}) =>
   request({ url: '/settings/dispatch', method: 'get', params })
 

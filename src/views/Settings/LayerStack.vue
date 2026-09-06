@@ -50,6 +50,25 @@ const skillDriversMap = () => Object.fromEntries((stack.value.skills || []).map(
 const triggerRolesMap = () => Object.fromEntries((stack.value.triggers || []).map((row) => [row.id, { ...(row.roles || {}) }]))
 const triggerSkillsMap = () => Object.fromEntries((stack.value.triggers || []).map((row) => [row.id, { ...(row.skills || {}) }]))
 
+const pathsOf = (trigger) => {
+  if (Array.isArray(trigger?.paths) && trigger.paths.length) return trigger.paths
+  const intents = trigger?.intents?.length ? trigger.intents : Object.keys(trigger?.roles || { default: '' })
+  const keys = intents.length ? intents : ['default']
+  const labels = trigger?.intent_labels || {}
+  return keys.map((intent) => {
+    const roleId = (trigger?.roles || {})[intent] || ''
+    const skillId = (trigger?.skills || {})[intent] || ''
+    const skill = findBy('skills', skillId)
+    return {
+      intent,
+      intent_label: labels[intent] || (intent === 'default' ? '默认' : intent),
+      role_id: roleId,
+      skill_id: skillId,
+      driver_ids: skill?.driver_ids || [],
+    }
+  })
+}
+
 const setPathRole = (trigger, path, roleId) => {
   const trigger_roles = triggerRolesMap()
   trigger_roles[trigger.id] = { ...(trigger_roles[trigger.id] || {}), [path.intent]: roleId }
@@ -129,12 +148,28 @@ onMounted(load)
     <header class="settings-page-header">
       <div>
         <h2 class="settings-page-title">编排</h2>
+        <p class="settings-page-desc">
+          入口来了走哪条路：选哪个
+          <router-link to="/roles">角色</router-link>、去做哪条
+          <router-link to="/skills">技能</router-link>、能用哪只手。
+          不写 prompt，也不改技能怎么跑。
+        </p>
       </div>
       <button type="button" class="settings-action-pill" :disabled="saving" @click="reset">
         恢复默认
         <span class="settings-action-arrow">→</span>
       </button>
     </header>
+
+    <p class="relation-map">
+      <em>入口</em>
+      <span>→</span>
+      <router-link to="/roles">角色 · 谁出面</router-link>
+      <span>→</span>
+      <router-link to="/skills">技能 · 做什么</router-link>
+      <span>→</span>
+      <router-link to="/packs">扩展包 / 手</router-link>
+    </p>
 
     <p v-if="!loading && !(stack.triggers || []).length" class="settings-page-desc">暂无数据</p>
 
@@ -154,14 +189,13 @@ onMounted(load)
           {{ trigger.live ? '已接通' : '还没接通' }}
         </span>
       </div>
-      <p class="stack-effect">{{ trigger.effect }}</p>
 
-      <div v-for="path in trigger.paths" :key="`${trigger.id}-${path.intent}`" class="stack-path">
+      <div v-for="path in pathsOf(trigger)" :key="`${trigger.id}-${path.intent}`" class="stack-path">
         <div class="settings-kicker">{{ path.intent_label }}</div>
 
         <template v-if="trigger.live">
           <el-form label-position="top" class="settings-form-stack">
-            <el-form-item label="交给谁">
+            <el-form-item label="交给谁（角色）">
               <el-select
                 :model-value="path.role_id"
                 placeholder="选择角色"
@@ -177,7 +211,7 @@ onMounted(load)
                 />
               </el-select>
             </el-form-item>
-            <el-form-item label="去做哪件事">
+            <el-form-item label="去做哪件事（技能）">
               <el-select
                 :model-value="path.skill_id"
                 placeholder="选择技能"
@@ -202,7 +236,7 @@ onMounted(load)
                     @change="togglePathDriver(path.skill_id, row.id)"
                   />
                   <span>{{ row.label }}</span>
-                  <small>{{ row.ready ? row.hint : (row.hint || '未连接') }}</small>
+                  <small>{{ row.ready ? row.hint : (row.hint || row.summary || '未连接') }}</small>
                 </label>
               </div>
             </el-form-item>
@@ -216,3 +250,35 @@ onMounted(load)
     </div>
   </div>
 </template>
+
+<style scoped>
+.relation-map {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 16px;
+  color: var(--settings-muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.relation-map a,
+.relation-map em {
+  color: var(--settings-primary);
+  font-style: normal;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.relation-map em {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--settings-primary-soft);
+}
+
+.settings-page-desc a {
+  color: var(--settings-primary);
+  font-weight: 700;
+}
+</style>

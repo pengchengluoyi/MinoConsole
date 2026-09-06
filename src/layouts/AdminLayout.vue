@@ -2,8 +2,8 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
-  DataBoard, User, Avatar, Files, Share, Message, Monitor,
-  Lock, Document, Collection, Connection, Cpu, Link,
+  DataBoard, User, Avatar, Files, Share, Message, Monitor, Menu,
+  Lock, Document, Collection, Connection, Cpu, Link, Notebook, Guide,
 } from '@element-plus/icons-vue'
 import { useSessionStore } from '@/store/session'
 import { roleLabel } from '@/utils/iam'
@@ -45,9 +45,11 @@ const groups = [
     id: 'caps',
     label: '能力',
     items: [
-      { id: 'roles', label: '产品角色', icon: User, to: '/roles' },
+      { id: 'skills', label: '技能', icon: Guide, to: '/skills' },
+      { id: 'roles', label: '角色', icon: User, to: '/roles' },
       { id: 'stack', label: '编排', icon: Share, to: '/stack' },
       { id: 'packs', label: '扩展包', icon: Files, to: '/packs' },
+      { id: 'knowledge', label: '知识库', icon: Notebook, to: '/knowledge' },
       { id: 'plugins', label: '插件策略', icon: Connection, to: '/plugins' },
     ],
   },
@@ -62,6 +64,9 @@ const groups = [
 ]
 
 const isActive = (item) => {
+  if (item.id === 'skills') {
+    return route.path === '/skills' || route.path.startsWith('/skills/')
+  }
   if (item.id === 'roles') {
     return route.path === '/roles' || route.path.startsWith('/roles/')
   }

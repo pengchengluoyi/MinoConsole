@@ -7,7 +7,7 @@ import { listPackKinds } from '@/api/packs'
 import { listProjects } from '@/api/project'
 import { inventoryOf, parseProjectList } from '@/utils/catalog'
 import { listRuntimeNodes, parseRuntimeNodes } from '@/api/runtime'
-import { getMailSettings, listAIRoles } from '@/api/settings'
+import { getMailSettings, listAISkills } from '@/api/settings'
 import { getRuntimeStatusHttp } from '@/api/system'
 import { pingServer, nexusOrigin, usesWebProxy } from '@/utils/config'
 import { roleLabel } from '@/utils/iam'
@@ -76,7 +76,7 @@ onMounted(async () => {
       settle(getRuntimeStatusHttp),
       settle(getMailSettings),
       settle(listPackKinds),
-      settle(listAIRoles),
+      settle(listAISkills),
       settle(getHealthHttp),
       settle(listProjects),
     ])
@@ -100,7 +100,7 @@ onMounted(async () => {
     }
     if (roles.ok) {
       const data = roles.value?.data || {}
-      roleCount.value = data.counts?.product ?? data.counts?.roles ?? (data.product || []).length
+      roleCount.value = data.counts?.skills ?? (data.skills || []).length
     }
     if (health.ok && !version.value) version.value = health.value?.nexus_version || ''
     if (catalog.ok) catalogInventory.value = inventoryOf(parseProjectList(catalog.value))
@@ -156,15 +156,15 @@ onMounted(async () => {
         <strong>{{ mailConfigured == null ? '—' : (mailConfigured ? '已配置' : '未配置') }}</strong>
         <p>来自 GET /settings/mail</p>
       </article>
-      <article class="settings-card dash-stat">
+      <article class="settings-card dash-stat is-link" @click="router.push('/skills')">
+        <div class="settings-kicker">技能</div>
+        <strong>{{ stat(roleCount) }}</strong>
+        <p>做什么、prompt 和 SOP</p>
+      </article>
+      <article class="settings-card dash-stat is-link" @click="router.push('/packs')">
         <div class="settings-kicker">扩展包</div>
         <strong>{{ packKindCount == null ? '—' : `${packKindCount} 类` }}</strong>
-        <p>{{ packItemCount == null ? '来自 GET /packs/kinds' : `共 ${packItemCount} 条` }}</p>
-      </article>
-      <article class="settings-card dash-stat">
-        <div class="settings-kicker">产品角色</div>
-        <strong>{{ stat(roleCount) }}</strong>
-        <p>来自 GET /settings/ai/roles</p>
+        <p>{{ packItemCount == null ? '能调用的 function' : `共 ${packItemCount} 条 function` }}</p>
       </article>
     </section>
 
@@ -180,8 +180,11 @@ onMounted(async () => {
         <button type="button" class="settings-action-pill" @click="router.push('/mail')">
           配置发信<span class="settings-action-arrow">→</span>
         </button>
+        <button type="button" class="settings-action-pill" @click="router.push('/skills')">
+          编辑技能<span class="settings-action-arrow">→</span>
+        </button>
         <button type="button" class="settings-action-pill" @click="router.push('/roles')">
-          编辑产品角色<span class="settings-action-arrow">→</span>
+          绑定角色<span class="settings-action-arrow">→</span>
         </button>
       </div>
     </section>

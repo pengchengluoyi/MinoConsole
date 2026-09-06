@@ -3,7 +3,7 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Promotion, Search } from '@element-plus/icons-vue'
-import { chatAIRole, getLayerStack, listAIRoles, saveLayerStack, saveRolePrompt } from '@/api/settings'
+import { chatAIRole, getLayerStack, listAIRoles, listAISkills, saveLayerStack } from '@/api/settings'
 import './settings-ui.css'
 
 const STARTERS = {
@@ -20,87 +20,25 @@ const STARTERS = {
   'im-defect-assistant': ['提缺陷：登录页点登录没反应', '缺步骤时你会问什么？', '这是闲聊你会怎么拒绝？'],
 }
 
-const DEFAULT_STARTERS = ['用一句话介绍你自己。', '你的输入和输出是什么？', '按原协议给一个最小示例。']
+const DEFAULT_STARTERS = ['用一句话介绍你自己。', '你能派出哪些技能？', '编排什么时候会选中你？']
 
 const route = useRoute()
 const router = useRouter()
 const loading = ref(false)
 const sending = ref(false)
-const DEFAULT_SKILL_CATEGORIES = [
-  { id: 'flow', label: '流程产出', desc: '读需求、写脑图和用例、出验收或发版草稿' },
-  { id: 'device', label: '设备操作', desc: '真机上规划、点按、定位和断言' },
-  { id: 'channel', label: '通道对话', desc: 'IM 里回答、下令、提缺陷，或问人' },
-  { id: 'sync', label: '外部同步', desc: '写到 Wiki 等外部系统' },
-  { id: 'prompt', label: '提示词辅件', desc: 'user 模板、厂商补丁、遗留与观察叠加' },
-]
-
-const SKILL_CATEGORY_FALLBACK = {
-  'im.dialogue': 'channel',
-  'im.defect': 'channel',
-  'hitl-composer': 'channel',
-  'goal-extract': 'device',
-  'inspect-session': 'device',
-  'case-scene': 'device',
-  'agent-decide': 'device',
-  'assert-vision': 'device',
-  'plan-overview': 'device',
-  'locate-vision': 'device',
-  'single-step-replan': 'device',
-  'persona-task': 'device',
-  publish_wiki: 'sync',
-  'legacy-im-dialogue': 'prompt',
-  'explain-overlay': 'prompt',
-  'volcengine-doubao-coord-append': 'prompt',
-  'volcengine-doubao-json-append': 'prompt',
-  'user-plan-overview': 'prompt',
-  'user-single-step-replan': 'prompt',
-  'user-locate-vision': 'prompt',
-  'user-assert-vision': 'prompt',
-  'user-hitl-composer': 'prompt',
-  'user-persona-task': 'prompt',
-  'user-goal-extract': 'prompt',
-  'user-inspect-session': 'prompt',
-  'user-case-scene': 'prompt',
-  'user-agent-decide': 'prompt',
-  'user-agent-restart': 'prompt',
-  'user-ai-plan': 'prompt',
-}
-
-const catalog = ref({ product: [], skills: [], skill_categories: [], counts: {} })
-const activeTab = ref('product')
+const catalog = ref({ product: [], skills: [], jobs: [] })
 const keyword = ref('')
-const skillFilter = ref('all')
-const selectedId = ref('conductor')
+const selectedId = ref('')
 const explainMode = ref(true)
 const draft = ref('')
 const messages = ref([])
 const chatEnd = ref(null)
 const tokenStats = ref({ prompt_tokens: 0, completion_tokens: 0, total_tokens: 0, turns: 0 })
-const promptDraft = ref('')
-const promptSaving = ref(false)
 const skillSaving = ref(false)
-
-const tabs = [
-  { id: 'product', label: '角色' },
-  { id: 'skills', label: '全部技能' },
-]
 
 const allRoles = computed(() => catalog.value.product || [])
 const allSkills = computed(() => catalog.value.skills || [])
-const skillCategories = computed(() => (
-  catalog.value.skill_categories?.length ? catalog.value.skill_categories : DEFAULT_SKILL_CATEGORIES
-))
-
-const skillCategoryOf = (row) => (
-  row?.category || SKILL_CATEGORY_FALLBACK[row?.id] || (row?.intent === 'talk' ? 'channel' : row?.intent === 'act' ? 'device' : 'flow')
-)
-
-const matchSkill = (row, q) => {
-  if (!q) return true
-  const roles = (row.role_ids || []).map((id) => roleById(id)?.label || id)
-  return [row.label, row.summary, row.category_label, skillCategoryOf(row), ...roles].join(' ').toLowerCase().includes(q)
-}
-
+const allJobs = computed(() => catalog.value.jobs || [])
 const currentList = computed(() => {
   const q = keyword.value.trim().toLowerCase()
   if (!q) return allRoles.value
@@ -109,62 +47,18 @@ const currentList = computed(() => {
   )
 })
 
-const skillGroups = computed(() => {
-  const q = keyword.value.trim().toLowerCase()
-  return skillCategories.value.map((cat) => {
-    const rows = allSkills.value.filter((row) => (
-      skillCategoryOf(row) === cat.id && matchSkill(row, q)
-    ))
-    return { ...cat, rows }
-  }).filter((group) => group.rows.length)
-})
-
-const visibleSkillGroups = computed(() => (
-  skillFilter.value === 'all'
-    ? skillGroups.value
-    : skillGroups.value.filter((group) => group.id === skillFilter.value)
-))
-
-const skillRowClass = ({ row }) => (row.id === selectedId.value ? 'is-current' : '')
-
-const categoryFilters = computed(() => {
-  const q = keyword.value.trim().toLowerCase()
-  const matched = allSkills.value.filter((row) => matchSkill(row, q))
-  return [
-    { id: 'all', label: '全部', desc: '', count: matched.length },
-    ...skillCategories.value.map((cat) => ({
-      ...cat,
-      count: matched.filter((row) => skillCategoryOf(row) === cat.id).length,
-    })),
-  ]
-})
-
-const skillById = (id) => allSkills.value.find((row) => row.id === id) || null
-const roleById = (id) => allRoles.value.find((row) => row.id === id) || null
+const skillById = (id) => allJobs.value.find((row) => row.id === id) || allSkills.value.find((row) => row.id === id) || null
 const boundSkills = (row) => (row?.skill_ids || []).map(skillById).filter(Boolean)
-const skillRoles = (row) => (row?.role_ids || []).map(roleById).filter(Boolean)
-const skillNames = (row) => boundSkills(row).map((s) => s.label).join(' · ') || '未绑定技能'
+const skillNames = (row) => boundSkills(row).map((s) => s.label).join(' · ') || '还没绑定技能'
+const selected = computed(() => allRoles.value.find((row) => row.id === selectedId.value) || currentList.value[0] || null)
+const selectedSkills = computed(() => boundSkills(selected.value))
+const starters = computed(() => STARTERS[selected.value?.id] || DEFAULT_STARTERS)
 const tokenLabel = computed(() => {
   const s = tokenStats.value
   if (!s.turns) return '本轮对话还没有 token'
   return `本轮 入 ${s.prompt_tokens} / 出 ${s.completion_tokens} · 共 ${s.total_tokens}`
 })
-
-const selected = computed(() => {
-  return allRoles.value.find((row) => row.id === selectedId.value) || currentList.value[0] || null
-})
-const selectedSkills = computed(() => boundSkills(selected.value))
-const isSkillTab = computed(() => activeTab.value === 'skills')
-const roleCount = computed(() => allRoles.value.length)
-const headerPill = computed(() => (
-  isSkillTab.value ? `${allSkills.value.length} 项技能` : `${roleCount.value} 个角色`
-))
-
-const starters = computed(() => STARTERS[selected.value?.id] || DEFAULT_STARTERS)
-const promptDirty = computed(() => {
-  if (!selected.value?.editable) return false
-  return promptDraft.value.trim() !== String(selected.value.system_prompt || '').trim()
-})
+const bindOptions = computed(() => (allJobs.value.length ? allJobs.value : allSkills.value))
 
 const calledLabel = (row) => {
   const v = row?.called || (row?.live ? 'wired' : 'sandbox')
@@ -182,33 +76,18 @@ const calledClass = (row) => {
 }
 
 const syncQuery = () => {
-  const raw = String(route.query.tab || '')
-  activeTab.value = raw === 'skills' || raw === 'runtime' ? 'skills' : 'product'
   const role = String(route.query.role || '').trim()
   if (role) selectedId.value = role
 }
 
 const pushQuery = () => {
-  const next = { tab: activeTab.value, role: selectedId.value }
-  if (route.query.tab === next.tab && route.query.role === next.role) return
-  router.replace({ path: '/roles', query: next })
+  if (!selectedId.value) return
+  if (String(route.query.role || '') === selectedId.value) return
+  router.replace({ path: '/roles', query: { role: selectedId.value } })
 }
 
 const resetTokens = () => {
   tokenStats.value = { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0, turns: 0 }
-}
-
-const selectSkill = (row) => {
-  if (!row?.id) return
-  selectedId.value = row.id
-  skillFilter.value = skillCategoryOf(row)
-  keyword.value = ''
-  activeTab.value = 'skills'
-  pushQuery()
-}
-
-const setSkillFilter = (id) => {
-  skillFilter.value = id
 }
 
 const addUsage = (usage) => {
@@ -223,27 +102,18 @@ const addUsage = (usage) => {
 
 const selectRole = (row) => {
   if (!row?.id) return
-  if (selectedId.value !== row.id || activeTab.value !== 'product') {
+  if (selectedId.value !== row.id) {
     selectedId.value = row.id
     messages.value = []
     draft.value = ''
     resetTokens()
   }
-  activeTab.value = 'product'
   pushQuery()
 }
 
-const setTab = (id) => {
-  activeTab.value = id
-  keyword.value = ''
-  if (id === 'skills') {
-    skillFilter.value = 'all'
-  } else if (allRoles.value.length && !allRoles.value.some((row) => row.id === selectedId.value)) {
-    selectedId.value = allRoles.value[0].id
-    messages.value = []
-    resetTokens()
-  }
-  pushQuery()
+const openSkill = (skill) => {
+  if (!skill?.id) return
+  router.push({ path: '/skills', query: { skill: skill.id } })
 }
 
 const scrollChat = async () => {
@@ -280,23 +150,13 @@ const send = async (text) => {
   }
 }
 
-const mergeStack = (rolesData, stack) => {
+const mergeStack = (rolesData, stack, skillPack) => {
   const next = {
     ...(rolesData || {}),
     product: [...(rolesData?.product || [])],
-    skills: [...(rolesData?.skills || [])],
-    skill_categories: rolesData?.skill_categories || [],
+    skills: [...(skillPack?.skills || rolesData?.skills || [])],
+    jobs: [...(rolesData?.jobs || [])],
   }
-  const stackSkills = stack?.skills || []
-  if (stackSkills.length) {
-    const extra = Object.fromEntries((next.skills || []).map((row) => [row.id, row]))
-    next.skills = stackSkills.map((row) => ({
-      ...row,
-      system_prompt: extra[row.id]?.system_prompt || row.system_prompt || '',
-      prompt_role_id: extra[row.id]?.prompt_role_id || row.owner,
-    }))
-  }
-  if (stack?.skill_categories?.length) next.skill_categories = stack.skill_categories
   const byRole = Object.fromEntries((stack?.roles || []).map((row) => [row.id, row.skill_ids || []]))
   next.product = next.product.map((row) => ({
     ...row,
@@ -308,17 +168,21 @@ const mergeStack = (rolesData, stack) => {
 const load = async () => {
   loading.value = true
   try {
-    const [rolesRes, stackRes] = await Promise.all([
+    const [rolesRes, stackRes, skillRes] = await Promise.all([
       listAIRoles(),
       getLayerStack().catch(() => null),
+      listAISkills().catch(() => null),
     ])
-    catalog.value = mergeStack(rolesRes?.data || { product: [], skills: [], skill_categories: [], counts: {} }, stackRes?.data)
-    if (!isSkillTab.value && selectedId.value && !allRoles.value.some((row) => row.id === selectedId.value)) {
+    catalog.value = mergeStack(
+      rolesRes?.data || { product: [], skills: [] },
+      stackRes?.data,
+      skillRes?.data,
+    )
+    if (!allRoles.value.some((row) => row.id === selectedId.value)) {
       selectedId.value = allRoles.value[0]?.id || ''
     }
-    promptDraft.value = selected.value?.system_prompt || ''
   } catch (e) {
-    ElMessage.error(e?.response?.data?.detail || '加载角色目录失败')
+    ElMessage.error(e?.response?.data?.detail || '加载角色失败')
   } finally {
     loading.value = false
   }
@@ -335,50 +199,12 @@ const persistSkills = async (roleId, skillIds) => {
     ElMessage.success('技能绑定已保存')
     await load()
   } catch (e) {
-    ElMessage.error(e?.response?.data?.detail || e?.message || '保存技能失败')
+    ElMessage.error(e?.response?.data?.detail || e?.message || '保存绑定失败')
   } finally {
     skillSaving.value = false
   }
 }
 
-const savePrompt = async () => {
-  const role = selected.value
-  if (!role?.editable || promptSaving.value) return
-  const text = promptDraft.value.trim()
-  if (!text) return ElMessage.warning('prompt 不能为空')
-  promptSaving.value = true
-  try {
-    await saveRolePrompt(role.id, { system_prompt: text })
-    ElMessage.success('prompt 已保存')
-    await load()
-  } catch (e) {
-    ElMessage.error(e?.response?.data?.detail || e?.message || '保存失败')
-  } finally {
-    promptSaving.value = false
-  }
-}
-
-const resetPrompt = async () => {
-  const role = selected.value
-  if (!role?.editable || promptSaving.value) return
-  promptSaving.value = true
-  try {
-    await saveRolePrompt(role.id, { reset: true })
-    ElMessage.success('已恢复默认 prompt')
-    await load()
-  } catch (e) {
-    ElMessage.error(e?.response?.data?.detail || e?.message || '恢复失败')
-  } finally {
-    promptSaving.value = false
-  }
-}
-
-watch(() => selected.value?.id, (id) => {
-  if (!id) return
-  promptDraft.value = selected.value?.system_prompt || ''
-})
-
-watch(() => route.query.tab, syncQuery)
 watch(() => route.query.role, syncQuery)
 
 onMounted(async () => {
@@ -392,102 +218,35 @@ onMounted(async () => {
   <div class="settings-panel roles-page wide-panel" v-loading="loading">
     <header class="settings-page-header">
       <div>
-        <h2 class="settings-page-title">产品角色</h2>
+        <h2 class="settings-page-title">角色</h2>
+        <p class="settings-page-desc">
+          角色是「谁出面」。
+          <router-link to="/stack">编排</router-link>
+          在入口选角色，角色再派出绑定的
+          <router-link to="/skills">技能</router-link>。
+          干活的 prompt 在技能页；这里只绑定技能，并可用这个身份试对话。
+        </p>
       </div>
-      <div class="settings-summary-pill">{{ headerPill }}</div>
+      <div class="settings-summary-pill">{{ allRoles.length }} 个角色</div>
     </header>
 
-    <div class="settings-tabbar is-compact">
-      <button
-        v-for="tab in tabs"
-        :key="tab.id"
-        type="button"
-        class="settings-tab"
-        :class="{ active: activeTab === tab.id }"
-        @click="setTab(tab.id)"
-      >
-        <strong>{{ tab.label }}</strong>
-      </button>
-    </div>
+    <p class="relation-map">
+      <router-link to="/stack">入口</router-link>
+      <span>→</span>
+      <em>角色 · 谁出面</em>
+      <span>→</span>
+      <router-link to="/skills">技能 · 做什么</router-link>
+      <span>→</span>
+      <router-link to="/packs">扩展包</router-link>
+    </p>
 
-    <div v-if="isSkillTab" class="skills-board">
-      <div class="settings-toolbar">
-        <el-input
-          v-model="keyword"
-          class="skill-search"
-          clearable
-          :prefix-icon="Search"
-          placeholder="搜索技能、角色"
-        />
-        <button
-          v-for="cat in categoryFilters"
-          :key="cat.id"
-          type="button"
-          class="cat-filter"
-          :class="{ active: skillFilter === cat.id }"
-          @click="setSkillFilter(cat.id)"
-        >
-          {{ cat.label }} {{ cat.count }}
-        </button>
-      </div>
-
-      <p v-if="!visibleSkillGroups.length" class="empty-hint">暂无数据</p>
-
-      <section
-        v-for="group in visibleSkillGroups"
-        :key="group.id"
-        class="settings-table-card"
-      >
-        <div class="skill-group-head">
-          <div>
-            <div class="settings-kicker">{{ group.label }}</div>
-            <p>{{ group.desc }}</p>
-          </div>
-          <div class="settings-summary-pill">{{ group.rows.length }}</div>
-        </div>
-        <el-table
-          :data="group.rows"
-          size="small"
-          border
-          stripe
-          highlight-current-row
-          :row-class-name="skillRowClass"
-        >
-          <el-table-column label="技能" min-width="140">
-            <template #default="{ row }">
-              <strong>{{ row.label }}</strong>
-            </template>
-          </el-table-column>
-          <el-table-column label="说明" min-width="220" show-overflow-tooltip>
-            <template #default="{ row }">{{ row.summary || '—' }}</template>
-          </el-table-column>
-          <el-table-column label="绑定角色" min-width="200">
-            <template #default="{ row }">
-              <div class="skill-roles">
-                <button
-                  v-for="role in skillRoles(row)"
-                  :key="role.id"
-                  type="button"
-                  class="cap-chip"
-                  @click="selectRole(role)"
-                >
-                  {{ role.label }}
-                </button>
-                <span v-if="!skillRoles(row).length" class="empty-hint">未绑定</span>
-              </div>
-            </template>
-          </el-table-column>
-        </el-table>
-      </section>
-    </div>
-
-    <div v-else class="roles-split">
+    <div class="roles-split">
       <aside class="settings-card roles-list">
         <el-input
           v-model="keyword"
           clearable
           :prefix-icon="Search"
-          placeholder="搜索角色、技能"
+          placeholder="搜索角色"
         />
         <button
           v-for="row in currentList"
@@ -499,7 +258,7 @@ onMounted(async () => {
         >
           <div class="role-item-head">
             <strong>{{ row.label }}</strong>
-            <span class="role-tag" :class="row.editable ? 'is-edit' : calledClass(row)">
+            <span class="role-tag" :class="calledClass(row)">
               {{ (row.skill_ids || []).length }} 项技能
             </span>
           </div>
@@ -512,7 +271,7 @@ onMounted(async () => {
         <section class="settings-card role-meta">
           <div class="role-meta-head">
             <div>
-              <div class="settings-kicker">{{ selected.group === 'abstract' ? '分析师' : '角色' }}</div>
+              <div class="settings-kicker">{{ selected.group === 'abstract' ? '调度角色' : '角色' }}</div>
               <h3>{{ selected.label }}</h3>
               <p>{{ selected.summary }}</p>
             </div>
@@ -522,30 +281,31 @@ onMounted(async () => {
           </div>
           <dl class="role-facts">
             <div>
-              <dt>何时调用</dt>
-              <dd>{{ (selected.triggers || []).join('；') || '设置页对话' }}</dd>
+              <dt>何时被选中</dt>
+              <dd>{{ (selected.triggers || []).join('；') || '设置页试对话' }}</dd>
             </div>
             <div>
-              <dt>绑定技能</dt>
-              <dd>{{ selectedSkills.length ? selectedSkills.map((s) => s.label).join(' · ') : '未绑定' }}</dd>
+              <dt>会派出</dt>
+              <dd>{{ selectedSkills.length ? selectedSkills.map((s) => s.label).join(' · ') : '还没绑定技能' }}</dd>
             </div>
             <div>
               <dt>用途</dt>
               <dd>{{ (selected.used_in || []).join(' · ') || '—' }}</dd>
             </div>
           </dl>
+
           <div class="related">
-            <span>绑定的技能</span>
+            <span>绑定的技能 · 点进去改 prompt</span>
             <button
               v-for="skill in selectedSkills"
               :key="skill.id"
               type="button"
               class="cap-chip"
-              @click="selectSkill(skill)"
+              @click="openSkill(skill)"
             >
               {{ skill.label }}
             </button>
-            <span v-if="!selectedSkills.length" class="empty-hint">未绑定</span>
+            <span v-if="!selectedSkills.length" class="empty-hint">未绑定。编排选中这个角色后将无技能可跑。</span>
             <el-select
               class="skill-picker"
               :model-value="selected.skill_ids || []"
@@ -557,50 +317,16 @@ onMounted(async () => {
               placeholder="添加或移除技能"
               @change="(ids) => persistSkills(selected.id, ids)"
             >
-              <el-option v-for="skill in allSkills" :key="skill.id" :label="skill.label" :value="skill.id" />
+              <el-option v-for="skill in bindOptions" :key="skill.id" :label="skill.label" :value="skill.id" />
             </el-select>
           </div>
-          <div v-if="selected.editable" class="prompt-edit">
-            <div class="prompt-edit-head">
-              <div class="settings-kicker">{{ selected.prompt_custom ? '已改过的 prompt' : 'System prompt' }}</div>
-            </div>
-            <el-input
-              v-model="promptDraft"
-              type="textarea"
-              :rows="12"
-              placeholder="这个角色的 system prompt"
-            />
-            <div class="prompt-edit-actions">
-              <button
-                type="button"
-                class="settings-action-pill"
-                :disabled="promptSaving || !promptDirty"
-                @click="savePrompt"
-              >
-                {{ promptSaving ? '保存中' : '保存 prompt' }}
-                <span class="settings-action-arrow">→</span>
-              </button>
-              <button
-                type="button"
-                class="settings-action-pill"
-                :disabled="promptSaving || !selected.prompt_custom"
-                @click="resetPrompt"
-              >
-                恢复默认
-                <span class="settings-action-arrow">→</span>
-              </button>
-            </div>
-          </div>
-          <details v-else-if="selected.system_prompt" class="prompt-box">
-            <summary>查看 system prompt</summary>
-            <pre>{{ selected.system_prompt }}</pre>
-          </details>
         </section>
 
         <section class="settings-card chat-card">
           <div class="chat-toolbar">
             <div>
-              <div class="settings-kicker">和这个角色对话</div>
+              <div class="settings-kicker">用这个身份试对话</div>
+              <p>只验证角色怎么说话，不会跑绑定技能，也不会点真机。</p>
               <p>{{ tokenLabel }}</p>
             </div>
             <label class="mode-toggle">
@@ -669,123 +395,42 @@ onMounted(async () => {
   min-height: 0;
 }
 
+.relation-map {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 16px;
+  color: var(--settings-muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.relation-map a,
+.relation-map em {
+  color: var(--settings-primary);
+  font-style: normal;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.relation-map em {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--settings-primary-soft);
+}
+
+.settings-page-desc a {
+  color: var(--settings-primary);
+  font-weight: 700;
+}
+
 .roles-split {
   display: grid;
   grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
   gap: 16px;
   align-items: stretch;
   min-height: min(62vh, 640px);
-}
-
-.skills-board {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  min-width: 0;
-}
-
-.skill-search {
-  width: 220px;
-}
-
-.cat-filter {
-  min-height: 28px;
-  padding: 0 12px;
-  border: 1px solid var(--settings-border);
-  border-radius: 999px;
-  background: #fff;
-  color: var(--settings-muted);
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.cat-filter.active {
-  border-color: color-mix(in srgb, var(--settings-primary) 45%, white);
-  background: var(--settings-primary-soft);
-  color: #4338ca;
-}
-
-.skill-group-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 10px;
-}
-
-.skill-group-head p {
-  margin: 6px 0 0;
-  color: var(--settings-muted);
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.skill-roles {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  align-items: center;
-}
-
-.skills-board :deep(.el-table .is-current > td) {
-  background: var(--settings-primary-soft);
-}
-
-.playbook-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr));
-  gap: 16px;
-  align-items: start;
-}
-
-.playbook-list h3 {
-  margin: 4px 0 6px;
-  font-size: 16px;
-}
-
-.playbook-list > .settings-card > p {
-  margin: 0 0 12px;
-  color: var(--settings-muted);
-  font-size: 13px;
-}
-
-.play-steps {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.play-steps li {
-  display: grid;
-  grid-template-columns: 22px minmax(0, 1fr);
-  gap: 4px 10px;
-  margin: 0;
-  padding: 8px 0;
-  border-top: 1px solid var(--settings-border);
-  font-size: 13px;
-}
-
-.play-steps li:first-child {
-  border-top: 0;
-  padding-top: 0;
-}
-
-.play-n {
-  color: var(--settings-primary);
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.play-copy {
-  min-width: 0;
-}
-
-.play-steps small {
-  grid-column: 2;
-  color: var(--settings-muted);
-  margin-top: 0;
-  overflow-wrap: anywhere;
 }
 
 .roles-list {
@@ -859,36 +504,6 @@ onMounted(async () => {
 .role-tag.is-observe {
   background: #eef2ff;
   color: #4338ca;
-}
-
-.role-tag.is-edit {
-  background: #fff7ed;
-  color: #c2410c;
-}
-
-.prompt-edit {
-  margin-top: 14px;
-}
-
-.prompt-edit :deep(.el-textarea__inner) {
-  border-radius: 12px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 12px;
-  line-height: 1.55;
-}
-
-.prompt-edit-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.prompt-edit-actions .settings-action-pill:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
 }
 
 .empty-hint {
@@ -973,32 +588,6 @@ onMounted(async () => {
   line-height: 1.4;
   text-align: left;
   cursor: pointer;
-}
-
-.prompt-box {
-  margin-top: 14px;
-  padding: 10px 12px;
-  border: 1px solid var(--settings-border);
-  border-radius: 12px;
-  background: #fbfdff;
-}
-
-.prompt-box summary {
-  cursor: pointer;
-  color: var(--settings-primary);
-  font-size: 12px;
-  font-weight: 750;
-}
-
-.prompt-box pre {
-  margin: 10px 0 0;
-  max-height: 280px;
-  overflow: auto;
-  white-space: pre-wrap;
-  word-break: break-word;
-  color: #1f2937;
-  font-size: 12px;
-  line-height: 1.55;
 }
 
 .chat-card {
@@ -1125,18 +714,6 @@ onMounted(async () => {
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
-}
-
-@media (min-width: 720px) {
-  .play-steps li {
-    grid-template-columns: 22px minmax(0, 1fr) auto;
-    align-items: baseline;
-  }
-
-  .play-steps small {
-    grid-column: auto;
-    justify-self: end;
-  }
 }
 
 @media (max-width: 960px) {
