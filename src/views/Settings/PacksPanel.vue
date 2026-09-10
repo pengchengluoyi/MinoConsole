@@ -231,8 +231,17 @@ const onCreated = async (item) => {
   if (item) openRow(item)
 }
 
-const onDrawerChanged = async () => {
-  await Promise.all([fetchItems(), fetchKinds()])
+const onDrawerChanged = async (item) => {
+  const prevKind = activeKind.value
+  await fetchKinds()
+  const newKind = item?.kind
+  if (newKind && newKind !== prevKind) {
+    activeKind.value = newKind
+  }
+  await fetchItems()
+  if (item?.uid) {
+    activeRow.value = item
+  }
 }
 </script>
 
@@ -397,6 +406,7 @@ const onDrawerChanged = async () => {
       :uid="activeRow?.uid || ''"
       :row="activeRow"
       :writable="true"
+      :kind-options="kindTabs"
       @changed="onDrawerChanged"
     />
   </div>

@@ -79,6 +79,26 @@ const VIEW_LABEL = {
 const PHASE_LABEL = { prep: '前置', do: '操作', check: '校验' }
 const KIND_LABEL = { prep: '前置', do: '操作', check: '校验', generic: '通用', recovery: '恢复' }
 
+const SKILL_JOB_MAP = {
+  'run-case': 'agent-decide',
+  analyze_req: 'analyze_req',
+  draft_mindmap: 'draft_mindmap',
+  draft_cases: 'draft_cases',
+  propose_atlas: 'propose_atlas',
+  conductor: 'conductor',
+  'im-dialogue': 'im-dialogue',
+  'im-defect': 'im-defect',
+  'req-qa-bm': 'req-qa-bm',
+  'version-qa-bm': 'version-qa-bm',
+  'test-engineer-chat': 'test-engineer-chat',
+  'report-writer': 'report-writer',
+  'doc-keeper': 'doc-keeper',
+  'knowledge-reviewer': 'knowledge-reviewer',
+  'product-expert': 'product-expert',
+}
+
+const linkedJobId = (skill) => SKILL_JOB_MAP[skill?.id] || ''
+
 const route = useRoute()
 const router = useRouter()
 const loading = ref(false)
@@ -619,6 +639,13 @@ onUnmounted(() => {
           </section>
 
           <section class="settings-card skill-block skill-prompt">
+            <div v-if="linkedJobId(selectedSkill)" class="job-link-banner">
+              <p>此技能的 prompt 在 <strong>Jobs</strong> 里维护（{{ linkedJobId(selectedSkill) }}）。</p>
+              <router-link :to="{ path: '/jobs', query: { job: linkedJobId(selectedSkill) } }" class="settings-action-pill">
+                打开 Jobs<span class="settings-action-arrow">→</span>
+              </router-link>
+            </div>
+            <template v-else>
             <div class="prompt-edit-head">
               <div class="settings-kicker">Prompt</div>
               <div class="prompt-edit-actions">
@@ -631,6 +658,7 @@ onUnmounted(() => {
               </div>
             </div>
             <el-input v-model="promptDraft" type="textarea" :rows="isChatSkill(selectedSkill) ? 16 : 12" placeholder="这个技能的 system prompt" />
+            </template>
           </section>
 
         </div>
@@ -716,6 +744,18 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+.job-link-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(64, 158, 255, 0.08);
+}
+.job-link-banner p { margin: 0; font-size: 13px; }
+
 .roles-page {
   display: flex;
   flex-direction: column;

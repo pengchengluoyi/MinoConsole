@@ -12,6 +12,7 @@ const PermissionsPage = () => import('../views/Permissions/index.vue')
 const AuditPage = () => import('../views/Audit/index.vue')
 const RolesPage = () => import('../views/Settings/RolesPage.vue')
 const SkillsPage = () => import('../views/Settings/SkillsPage.vue')
+const JobsPage = () => import('../views/Settings/JobsPage.vue')
 const PacksPage = () => import('../views/Settings/PacksPage.vue')
 const KnowledgePage = () => import('../views/Knowledge/index.vue')
 const KeysPage = () => import('../views/Settings/KeysPage.vue')
@@ -50,6 +51,7 @@ const routes = [
       { path: 'access', redirect: { path: '/permissions', query: { tab: 'matrix' } } },
       { path: 'audit', name: 'Audit', component: AuditPage, meta: { title: '操作记录' } },
       { path: 'skills', name: 'Skills', component: SkillsPage, meta: { title: '技能' } },
+      { path: 'jobs', name: 'Jobs', component: JobsPage, meta: { title: 'Jobs' } },
       {
         path: 'roles',
         name: 'Roles',
@@ -85,6 +87,7 @@ const routes = [
       },
       { path: 'settings/stack', redirect: '/stack' },
       { path: 'settings/skills', redirect: (to) => ({ path: '/skills', query: { skill: to.query.skill || undefined } }) },
+      { path: 'settings/jobs', redirect: (to) => ({ path: '/jobs', query: { job: to.query.job || undefined } }) },
       { path: 'settings/packs', redirect: keepQuery('/packs') },
       { path: 'settings/knowledge', redirect: '/knowledge' },
       { path: 'settings/keys', redirect: '/mail' },

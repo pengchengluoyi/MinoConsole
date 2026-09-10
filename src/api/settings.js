@@ -175,6 +175,24 @@ export const createAISkill = (data) =>
 export const saveAISkill = (skillId, data) =>
   request({ url: `/settings/ai/skills/${skillId}`, method: 'put', data })
 
+export const listAIJobs = () =>
+  request({ url: '/settings/ai/jobs', method: 'get' })
+
+export const getAIJob = (jobId) =>
+  request({ url: `/settings/ai/jobs/${jobId}`, method: 'get' })
+
+export const getAIJobsHealth = () =>
+  request({ url: '/settings/ai/jobs/health', method: 'get' })
+
+export const saveAIJob = async (jobId, data) => {
+  const res = await request({ url: `/settings/ai/jobs/${jobId}`, method: 'put', data })
+  recordAudit(data?.reset ? '恢复默认 Job' : '保存 Job', jobId)
+  return res
+}
+
+export const previewAIJob = (jobId, data = {}) =>
+  request({ url: `/settings/ai/jobs/${jobId}/preview`, method: 'post', data, timeout: 60000 })
+
 export const listDispatchCalls = (params = {}) =>
   request({ url: '/settings/dispatch', method: 'get', params })
 

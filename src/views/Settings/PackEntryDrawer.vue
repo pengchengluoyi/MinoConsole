@@ -13,6 +13,7 @@ const props = defineProps({
   row: { type: Object, default: null },
   fixture: { type: Boolean, default: false },
   writable: { type: Boolean, default: false },
+  kindOptions: { type: Array, default: () => [] },
 })
 const emit = defineEmits(['update:modelValue', 'changed'])
 
@@ -67,6 +68,17 @@ const LIFECYCLE_LABEL = Object.fromEntries(LIFECYCLE_OPTIONS.map((o) => [o.value
 const canWrite = computed(() => !props.fixture && props.writable && !props.compact && !!(item.value?.uid || props.uid))
 const canPreview = computed(() => !props.fixture && !!(props.uid || item.value?.uid))
 
+const kindSelectOptions = computed(() => {
+  const rows = props.kindOptions || []
+  if (rows.length) {
+    return rows.map((o) => ({
+      value: o.kind,
+      label: o.label ? `${o.label}（${o.kind}）` : o.kind,
+    }))
+  }
+  return ['prep', 'do', 'check', 'generic', 'recovery'].map((k) => ({ value: k, label: k }))
+})
+
 const itemStatus = computed(() => {
   const row = form.value || item.value || {}
   if (row.lifecycle === 'deprecated' || row.enabled === false) return 'deprecated'
@@ -97,6 +109,7 @@ const hydrate = (row) => {
     cells[key] = classifyPayload(payload[key])
   }
   form.value = {
+    kind: row?.kind || '',
     display_name: row?.display_name || '',
     description: row?.description || '',
     category: row?.category || '',
@@ -224,7 +237,7 @@ const save = async () => {
   try {
     const res = await updatePack(props.uid, {
       root: 'builtin',
-      kind: item.value.kind,
+      kind: form.value.kind || item.value.kind,
       id: item.value.id,
       display_name: form.value.display_name,
       title: form.value.display_name,
@@ -242,7 +255,7 @@ const save = async () => {
     item.value = res?.data?.item || item.value
     hydrate(item.value || {})
     ElMessage.success(res?.msg || '已保存')
-    emit('changed')
+    emit('changed', item.value)
   } catch (e) {
     ElMessage.error(writeUnavailableMessage(e, '保存失败'))
   } finally {
@@ -281,7 +294,16 @@ const save = async () => {
       <div v-if="form" class="pd-form">
         <dl class="pd-dl">
           <dt>kind</dt>
-          <dd><el-input :model-value="item?.kind" disabled /></dd>
+          <dd>
+            <el-select v-model="form.kind" :disabled="!canWrite" style="width: 100%">
+              <el-option
+                v-for="o in kindSelectOptions"
+                :key="o.value"
+                :label="o.label"
+                :value="o.value"
+              />
+            </el-select>
+          </dd>
           <dt>标识</dt>
           <dd><el-input :model-value="item?.id" disabled /></dd>
           <dt>显示名</dt>

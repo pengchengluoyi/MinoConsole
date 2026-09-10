@@ -46,6 +46,7 @@ const groups = [
     label: '能力',
     items: [
       { id: 'skills', label: '技能', icon: Guide, to: '/skills' },
+      { id: 'jobs', label: 'Jobs', icon: Document, to: '/jobs' },
       { id: 'roles', label: '角色', icon: User, to: '/roles' },
       { id: 'stack', label: '编排', icon: Share, to: '/stack' },
       { id: 'packs', label: '扩展包', icon: Files, to: '/packs' },
@@ -66,6 +67,9 @@ const groups = [
 const isActive = (item) => {
   if (item.id === 'skills') {
     return route.path === '/skills' || route.path.startsWith('/skills/')
+  }
+  if (item.id === 'jobs') {
+    return route.path === '/jobs' || route.path.startsWith('/jobs/')
   }
   if (item.id === 'roles') {
     return route.path === '/roles' || route.path.startsWith('/roles/')
