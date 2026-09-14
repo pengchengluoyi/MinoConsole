@@ -1,8 +1,7 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Search } from '@element-plus/icons-vue'
-import AppScopePicker from '@/components/AppScopePicker.vue'
+import { Plus } from '@element-plus/icons-vue'
 import {
   deleteKnowledgeItem,
   getTestingKnowledge,
@@ -10,19 +9,15 @@ import {
   upsertKnowledgeItem,
 } from '@/api/settings'
 import { listProjects } from '@/api/project'
-import { useAppScopePicker } from '@/composables/useAppScopePicker'
 import { apiErrorMessage } from '@/utils/apiError'
 import { parseProjectList } from '@/utils/catalog'
-import '../Settings/settings-ui.css'
+import '../../Settings/settings-ui.css'
 
-const {
-  loading: pickerLoading,
-  cascaderOptions,
-  cascaderValue,
-  projectId: scopeProjectId,
-  appId: scopeAppId,
-  openInCatalog,
-} = useAppScopePicker()
+const props = defineProps({
+  appId: { type: String, required: true },
+  projectId: { type: String, default: '' },
+  embedded: { type: Boolean, default: true },
+})
 
 const STATUS_LABEL = { approved: '已通过', pending: '待审', rejected: '已驳回' }
 const STATUS_TYPE = { approved: 'success', pending: 'warning', rejected: 'info' }
@@ -31,13 +26,13 @@ const loading = ref(false)
 const saving = ref(false)
 const items = ref([])
 const apps = ref([])
-const projects = ref([])
 const keyword = ref('')
 const statusFilter = ref('')
 
 const drawerOpen = ref(false)
 const editing = ref(null)
 const form = ref(emptyForm())
+const showTechIds = ref(false)
 
 function emptyForm() {
   return {
@@ -53,29 +48,21 @@ function emptyForm() {
   }
 }
 
-const appName = (id) => {
-  const app = apps.value.find((a) => a.id === id)
-  if (app) return app.name
-  const proj = projects.value.find((p) => p.id === id)
-  if (proj) return `项目：${proj.name}`
-  return id
-}
+const appName = (id) => apps.value.find((a) => a.id === id)?.name || '应用'
 
-const scopeLabel = (ids) => {
-  if (!ids?.length) return '全部应用'
-  return ids.map(appName).join('、')
+function rowMatchesScope(row) {
+  const ids = row.app_ids || []
+  if (!ids.length) return true
+  if (props.appId && ids.includes(props.appId)) return true
+  if (props.projectId && ids.includes(props.projectId)) return true
+  return false
 }
 
 const visible = computed(() => {
   const q = keyword.value.trim().toLowerCase()
   return items.value.filter((row) => {
+    if (!rowMatchesScope(row)) return false
     if (statusFilter.value && row.review_status !== statusFilter.value) return false
-    if (scopeAppId.value) {
-      const ids = row.app_ids || []
-      if (ids.length && !ids.includes(scopeAppId.value) && !ids.includes(scopeProjectId.value)) {
-        return false
-      }
-    }
     if (!q) return true
     const hay = [row.title, row.content, row.category, ...(row.tags || [])].join(' ').toLowerCase()
     return hay.includes(q)
@@ -90,8 +77,8 @@ const load = async () => {
       listProjects().catch(() => ({})),
     ])
     items.value = know?.data?.items || []
-    projects.value = parseProjectList(proj)
-    apps.value = projects.value.flatMap((p) =>
+    const projects = parseProjectList(proj)
+    apps.value = projects.flatMap((p) =>
       (p.apps || []).map((a) => ({
         id: a.id,
         name: a.name || a.id,
@@ -110,7 +97,7 @@ const load = async () => {
 const openCreate = () => {
   editing.value = null
   form.value = emptyForm()
-  if (scopeAppId.value) form.value.scopeIds = [scopeAppId.value]
+  form.value.scopeIds = props.appId ? [props.appId] : []
   drawerOpen.value = true
 }
 
@@ -128,6 +115,14 @@ const openEdit = (row) => {
     review_status: row.review_status || 'approved',
   }
   drawerOpen.value = true
+}
+
+const scopeLabel = (ids) => {
+  if (!ids?.length) return '全部应用'
+  return ids.map((id) => {
+    if (id === props.projectId) return `项目：${props.projectId ? '本项目' : id}`
+    return appName(id)
+  }).join('、')
 }
 
 const save = async () => {
@@ -183,41 +178,23 @@ const review = async (row, action) => {
   }
 }
 
-const goAppKnowledge = () => openInCatalog('knowledge')
+watch(() => [props.appId, props.projectId], load)
 
 onMounted(load)
 </script>
 
 <template>
-  <div class="settings-panel wide-panel" v-loading="loading">
-    <header class="settings-page-header">
-      <div>
-        <h2 class="settings-page-title">知识审核</h2>
-        <p class="settings-page-desc">
-          跨应用待审与检索。按应用维护请从「项目与应用 → 应用 → 执行知识」进入。
-        </p>
-      </div>
-      <el-button type="primary" :icon="Plus" @click="openCreate">新建</el-button>
-    </header>
+  <div class="kn-panel" v-loading="loading">
+    <div class="embedded-toolbar">
+      <p class="scope-note muted">本应用可见：绑定本应用 / 本项目 / 或未限定范围的知识条</p>
+      <el-button type="primary" size="small" :icon="Plus" @click="openCreate">新建</el-button>
+    </div>
 
     <div class="settings-toolbar">
-      <el-input
-        v-model="keyword"
-        class="toolbar-search"
-        clearable
-        placeholder="搜标题 / 正文 / 标签"
-        :prefix-icon="Search"
-      />
+      <el-input v-model="keyword" class="toolbar-search" clearable placeholder="搜标题 / 正文 / 标签" />
       <el-select v-model="statusFilter" placeholder="审核状态" clearable class="filter-item">
         <el-option v-for="(label, value) in STATUS_LABEL" :key="value" :label="label" :value="value" />
       </el-select>
-      <AppScopePicker
-        v-model="cascaderValue"
-        :options="cascaderOptions"
-        :loading="pickerLoading"
-        catalog-tab="knowledge"
-        @open-catalog="goAppKnowledge"
-      />
     </div>
 
     <section class="settings-table-card">
@@ -254,17 +231,15 @@ onMounted(load)
           <el-form-item label="分类"><el-input v-model="form.category" /></el-form-item>
           <el-form-item label="正文"><el-input v-model="form.content" type="textarea" :rows="10" /></el-form-item>
           <el-form-item label="标签"><el-input v-model="form.tagsText" placeholder="逗号分隔" /></el-form-item>
-          <el-form-item label="生效范围（应用或项目，空=全部）">
-            <el-select v-model="form.scopeIds" multiple filterable clearable>
-              <el-option-group v-for="p in projects" :key="p.id" :label="p.name">
-                <el-option :label="`${p.name}（项目共享）`" :value="p.id" />
-                <el-option
-                  v-for="a in p.apps || []"
-                  :key="a.id"
-                  :label="a.name || a.id"
-                  :value="a.id"
-                />
-              </el-option-group>
+          <el-form-item label="生效范围（应用或项目）">
+            <el-select v-model="form.scopeIds" multiple filterable clearable placeholder="空 = 全部应用">
+              <el-option v-if="projectId" :label="`本项目（共享）`" :value="projectId" />
+              <el-option
+                v-for="a in apps.filter((x) => !appId || x.id === appId)"
+                :key="a.id"
+                :label="a.name"
+                :value="a.id"
+              />
             </el-select>
           </el-form-item>
           <el-form-item label="启用"><el-switch v-model="form.enabled" /></el-form-item>
@@ -279,9 +254,11 @@ onMounted(load)
 </template>
 
 <style scoped>
+.embedded-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px; }
+.scope-note { margin: 0; font-size: 13px; }
+.filter-item { width: 140px; }
 .pd-wrap { padding: 8px; }
 .pd-title { margin: 0 0 12px; font-size: 16px; }
 .pd-editor-bar { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
-.filter-item { width: 140px; }
-.settings-page-desc { margin: 4px 0 0; font-size: 13px; color: var(--el-text-color-secondary); }
+.muted { color: var(--el-text-color-secondary); }
 </style>

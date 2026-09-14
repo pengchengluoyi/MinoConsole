@@ -50,7 +50,7 @@ const groups = [
       { id: 'roles', label: '角色', icon: User, to: '/roles' },
       { id: 'stack', label: '编排', icon: Share, to: '/stack' },
       { id: 'packs', label: '扩展包', icon: Files, to: '/packs' },
-      { id: 'knowledge', label: '知识库', icon: Notebook, to: '/knowledge' },
+      { id: 'knowledge', label: '知识审核', icon: Notebook, to: '/knowledge' },
       { id: 'plugins', label: '插件策略', icon: Connection, to: '/plugins' },
     ],
   },

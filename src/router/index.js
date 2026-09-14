@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { getAuthStatus, logoutAccount } from '@/api/auth'
+import { readStoredAppScope } from '@/composables/useCatalogAppContext'
 import { clearTitlebar } from '@/composables/useTitlebar'
 import { clearRealtimeTokens } from '@/utils/realtime'
 import { normalizeRole } from '@/utils/iam'
@@ -15,18 +16,39 @@ const SkillsPage = () => import('../views/Settings/SkillsPage.vue')
 const JobsPage = () => import('../views/Settings/JobsPage.vue')
 const PacksPage = () => import('../views/Settings/PacksPage.vue')
 const KnowledgePage = () => import('../views/Knowledge/index.vue')
+const DocLibraryPage = () => import('../views/DocLibrary/index.vue')
+const AppIntelPage = () => import('../views/AppIntel/index.vue')
 const KeysPage = () => import('../views/Settings/KeysPage.vue')
 const SystemPage = () => import('../views/Settings/SystemPage.vue')
 const NetworkPage = () => import('../views/Network/index.vue')
 const LayerStack = () => import('../views/Settings/LayerStack.vue')
 const CatalogPage = () => import('../views/Catalog/index.vue')
 const CatalogProject = () => import('../views/Catalog/ProjectPage.vue')
-const CatalogApp = () => import('../views/Catalog/AppPage.vue')
+const CatalogAppShell = () => import('../views/Catalog/AppShell.vue')
+const CatalogAppOverview = () => import('../views/Catalog/AppOverview.vue')
+const CatalogAppKnowledge = () => import('../views/Catalog/AppKnowledge.vue')
+const CatalogAppDocs = () => import('../views/Catalog/AppDocs.vue')
+const CatalogAppIntel = () => import('../views/Catalog/AppIntel.vue')
 const NodesPage = () => import('../views/Catalog/NodesPage.vue')
 const PluginsPage = () => import('../views/Settings/PluginsPage.vue')
 const PluginDetail = () => import('../views/Settings/PluginDetailPage.vue')
 
 const keepQuery = (path) => (to) => ({ path, query: to.query })
+
+function redirectToCatalogAppTab(tab) {
+  const s = readStoredAppScope()
+  if (s) {
+    const routes = {
+      docs: 'docs',
+      intel: 'intel',
+      knowledge: 'knowledge',
+      overview: '',
+    }
+    const suffix = routes[tab] ? `/${routes[tab]}` : ''
+    return `/catalog/${s.projectId}/apps/${s.appId}${suffix}`
+  }
+  return '/catalog'
+}
 
 const routes = [
   {
@@ -44,7 +66,18 @@ const routes = [
       { path: 'dashboard', name: 'Dashboard', component: Dashboard, meta: { title: '工作台' } },
       { path: 'catalog', name: 'Catalog', component: CatalogPage, meta: { title: '项目与应用' } },
       { path: 'catalog/:projectId', name: 'CatalogProject', component: CatalogProject, meta: { title: '项目' } },
-      { path: 'catalog/:projectId/apps/:appId', name: 'CatalogApp', component: CatalogApp, meta: { title: '应用' } },
+      {
+        path: 'catalog/:projectId/apps/:appId',
+        component: CatalogAppShell,
+        meta: { title: '应用' },
+        children: [
+          { path: '', name: 'CatalogApp', redirect: { name: 'CatalogAppOverview' } },
+          { path: 'overview', name: 'CatalogAppOverview', component: CatalogAppOverview, meta: { title: '应用' } },
+          { path: 'knowledge', name: 'CatalogAppKnowledge', component: CatalogAppKnowledge, meta: { title: '应用 · 知识' } },
+          { path: 'docs', name: 'CatalogAppDocs', component: CatalogAppDocs, meta: { title: '应用 · 文档' } },
+          { path: 'intel', name: 'CatalogAppIntel', component: CatalogAppIntel, meta: { title: '应用 · 信息基座' } },
+        ],
+      },
       { path: 'nodes', name: 'Nodes', component: NodesPage, meta: { title: '节点与设备' } },
       { path: 'members', name: 'Members', component: AccountsPage, meta: { title: '成员' } },
       { path: 'permissions', name: 'Permissions', component: PermissionsPage, meta: { title: '权限配置' } },
@@ -66,7 +99,9 @@ const routes = [
       },
       { path: 'stack', name: 'Stack', component: LayerStack, meta: { title: '编排' } },
       { path: 'packs', name: 'Packs', component: PacksPage, meta: { title: '扩展包' } },
-      { path: 'knowledge', name: 'Knowledge', component: KnowledgePage, meta: { title: '知识库' } },
+      { path: 'knowledge', name: 'Knowledge', component: KnowledgePage, meta: { title: '知识审核' } },
+      { path: 'doc-library', name: 'DocLibrary', component: DocLibraryPage, meta: { title: '文档库' } },
+      { path: 'app-intel', name: 'AppIntel', component: AppIntelPage, meta: { title: '信息基座' } },
       { path: 'mail', name: 'Mail', component: KeysPage, meta: { title: '发信' } },
       { path: 'plugins', name: 'Plugins', component: PluginsPage, meta: { title: '插件策略' } },
       { path: 'plugins/:pluginId', name: 'PluginDetail', component: PluginDetail, meta: { title: '插件策略' } },
@@ -90,6 +125,8 @@ const routes = [
       { path: 'settings/jobs', redirect: (to) => ({ path: '/jobs', query: { job: to.query.job || undefined } }) },
       { path: 'settings/packs', redirect: keepQuery('/packs') },
       { path: 'settings/knowledge', redirect: '/knowledge' },
+      { path: 'settings/doc-library', redirect: () => redirectToCatalogAppTab('docs') },
+      { path: 'settings/app-intel', redirect: () => redirectToCatalogAppTab('intel') },
       { path: 'settings/keys', redirect: '/mail' },
       { path: 'settings/system', redirect: '/health' },
     ],

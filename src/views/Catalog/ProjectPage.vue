@@ -38,7 +38,7 @@ const facts = computed(() => {
     { label: '环境档位', value: labels.value.join(' · ') },
     { label: '应用数', value: String((p.apps || []).length) },
     { label: '用例数', value: String(caseCountOf(p)) },
-    { label: '知识数', value: String(knowledgeCountOf(p)) },
+    { label: '知识数（各应用合计）', value: String(knowledgeCountOf(p)) },
   ]
 })
 
@@ -55,10 +55,16 @@ const load = async () => {
   }
 }
 
-const openApp = (app) => {
+const openApp = (app, tab = 'overview') => {
   if (!app?.id || !projectId.value) return
+  const routes = {
+    overview: 'CatalogAppOverview',
+    knowledge: 'CatalogAppKnowledge',
+    docs: 'CatalogAppDocs',
+    intel: 'CatalogAppIntel',
+  }
   router.push({
-    name: 'CatalogApp',
+    name: routes[tab] || 'CatalogAppOverview',
     params: { projectId: projectId.value, appId: app.id },
   })
 }
@@ -119,6 +125,13 @@ watch(projectId, load)
           </el-table-column>
           <el-table-column label="知识" width="80">
             <template #default="{ row }">{{ knowledgeCountOf(row) }}</template>
+          </el-table-column>
+          <el-table-column label="快捷入口" width="220" @click.stop>
+            <template #default="{ row }">
+              <el-button link type="primary" size="small" @click.stop="openApp(row, 'docs')">文档</el-button>
+              <el-button link type="primary" size="small" @click.stop="openApp(row, 'knowledge')">知识</el-button>
+              <el-button link type="primary" size="small" @click.stop="openApp(row, 'intel')">信息基座</el-button>
+            </template>
           </el-table-column>
           <el-table-column label="创建人" min-width="120">
             <template #default="{ row }">{{ creatorName(row) }}</template>
