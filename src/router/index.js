@@ -20,6 +20,7 @@ const DocLibraryPage = () => import('../views/DocLibrary/index.vue')
 const AppIntelPage = () => import('../views/AppIntel/index.vue')
 const KeysPage = () => import('../views/Settings/KeysPage.vue')
 const SystemPage = () => import('../views/Settings/SystemPage.vue')
+const AccountPoolTemplatesPage = () => import('../views/Settings/AccountPoolTemplatesPage.vue')
 const NetworkPage = () => import('../views/Network/index.vue')
 const LayerStack = () => import('../views/Settings/LayerStack.vue')
 const CatalogPage = () => import('../views/Catalog/index.vue')
@@ -79,6 +80,12 @@ const routes = [
         ],
       },
       { path: 'nodes', name: 'Nodes', component: NodesPage, meta: { title: '节点与设备' } },
+      {
+        path: 'account-pool-templates',
+        name: 'AccountPoolTemplates',
+        component: AccountPoolTemplatesPage,
+        meta: { title: '号池模板' },
+      },
       { path: 'members', name: 'Members', component: AccountsPage, meta: { title: '成员' } },
       { path: 'permissions', name: 'Permissions', component: PermissionsPage, meta: { title: '权限配置' } },
       { path: 'access', redirect: { path: '/permissions', query: { tab: 'matrix' } } },

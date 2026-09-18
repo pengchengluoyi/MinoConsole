@@ -22,7 +22,7 @@ const loading = ref(false)
 const project = ref(null)
 
 const projectId = computed(() => String(route.params.projectId || ''))
-const labels = computed(() => envLabels(project.value?.env))
+const labels = computed(() => envLabels(project.value?.env_summary || project.value?.env))
 const facts = computed(() => {
   const p = project.value
   if (!p) return []

@@ -30,6 +30,7 @@ const groups = [
     items: [
       { id: 'catalog', label: '项目与应用', icon: Collection, to: '/catalog' },
       { id: 'nodes', label: '节点与设备', icon: Cpu, to: '/nodes' },
+      { id: 'account-pool-templates', label: '号池模板', icon: Notebook, to: '/account-pool-templates' },
     ],
   },
   {

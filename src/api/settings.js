@@ -1,6 +1,16 @@
 import request from '@/utils/request'
 import { recordAudit } from '@/utils/auditLog'
 
+export const getAccountPoolTemplates = () =>
+  request({ url: '/settings/account-pool-templates', method: 'get' })
+
+export const saveAccountPoolTemplates = (payload) => {
+  const body = Array.isArray(payload)
+    ? { templates: payload, extension_addons: {} }
+    : payload
+  return request({ url: '/settings/account-pool-templates', method: 'put', data: body })
+}
+
 export const listFeishuBots = () =>
   request({ url: '/settings/feishu/bots', method: 'get' })
 

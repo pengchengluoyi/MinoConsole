@@ -33,6 +33,10 @@ export function platformTags(platforms) {
 
 export function envLabels(env) {
   if (!env || typeof env !== 'object') return []
+  const keys = env.environment_keys
+  if (Array.isArray(keys) && keys.length) {
+    return keys.map((k) => String(k || '').trim()).filter(Boolean)
+  }
   const rows = Array.isArray(env.environments) ? env.environments : []
   return rows.map((row) => row?.label || row?.key).filter(Boolean)
 }
