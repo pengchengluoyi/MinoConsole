@@ -1,6 +1,15 @@
 import request from '@/utils/request'
 import { recordAudit } from '@/utils/auditLog'
 
+export const getCaseResourceKeyCatalog = () =>
+  request({ url: '/settings/case-resource-key', method: 'get' })
+
+export const getResourceTransitionRules = () =>
+  request({ url: '/settings/resource-transition-rules', method: 'get' })
+
+export const patchResourceTransitionRule = (ruleId, data) =>
+  request({ url: `/settings/resource-transition-rules/${encodeURIComponent(ruleId)}`, method: 'patch', data })
+
 export const getAccountPoolTemplates = () =>
   request({ url: '/settings/account-pool-templates', method: 'get' })
 

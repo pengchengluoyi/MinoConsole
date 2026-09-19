@@ -21,6 +21,8 @@ const AppIntelPage = () => import('../views/AppIntel/index.vue')
 const KeysPage = () => import('../views/Settings/KeysPage.vue')
 const SystemPage = () => import('../views/Settings/SystemPage.vue')
 const AccountPoolTemplatesPage = () => import('../views/Settings/AccountPoolTemplatesPage.vue')
+const CaseResourceKeyPage = () => import('../views/Settings/CaseResourceKeyPage.vue')
+const ResourceTransitionRulesPage = () => import('../views/Settings/ResourceTransitionRulesPage.vue')
 const NetworkPage = () => import('../views/Network/index.vue')
 const LayerStack = () => import('../views/Settings/LayerStack.vue')
 const CatalogPage = () => import('../views/Catalog/index.vue')
@@ -85,6 +87,18 @@ const routes = [
         name: 'AccountPoolTemplates',
         component: AccountPoolTemplatesPage,
         meta: { title: '号池模板' },
+      },
+      {
+        path: 'case-resource-key',
+        name: 'CaseResourceKey',
+        component: CaseResourceKeyPage,
+        meta: { title: '用例密钥' },
+      },
+      {
+        path: 'resource-transition-rules',
+        name: 'ResourceTransitionRules',
+        component: ResourceTransitionRulesPage,
+        meta: { title: '转移规则' },
       },
       { path: 'members', name: 'Members', component: AccountsPage, meta: { title: '成员' } },
       { path: 'permissions', name: 'Permissions', component: PermissionsPage, meta: { title: '权限配置' } },

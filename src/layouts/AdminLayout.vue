@@ -3,7 +3,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   DataBoard, User, Avatar, Files, Share, Message, Monitor, Menu,
-  Lock, Document, Collection, Connection, Cpu, Link, Notebook, Guide,
+  Lock, Document, Collection, Connection, Cpu, Link, Notebook, Guide, Key,
 } from '@element-plus/icons-vue'
 import { useSessionStore } from '@/store/session'
 import { roleLabel } from '@/utils/iam'
@@ -31,6 +31,8 @@ const groups = [
       { id: 'catalog', label: '项目与应用', icon: Collection, to: '/catalog' },
       { id: 'nodes', label: '节点与设备', icon: Cpu, to: '/nodes' },
       { id: 'account-pool-templates', label: '号池模板', icon: Notebook, to: '/account-pool-templates' },
+      { id: 'case-resource-key', label: '用例密钥', icon: Key, to: '/case-resource-key' },
+      { id: 'resource-transition-rules', label: '转移规则', icon: Share, to: '/resource-transition-rules' },
     ],
   },
   {
@@ -80,6 +82,12 @@ const isActive = (item) => {
   }
   if (item.id === 'nodes') {
     return route.path === '/nodes' || route.path.startsWith('/nodes/')
+  }
+  if (item.id === 'case-resource-key') {
+    return route.path === '/case-resource-key'
+  }
+  if (item.id === 'resource-transition-rules') {
+    return route.path === '/resource-transition-rules'
   }
   if (item.id === 'plugins') {
     return route.path === '/plugins' || route.path.startsWith('/plugins/')
