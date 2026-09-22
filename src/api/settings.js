@@ -20,6 +20,26 @@ export const saveAccountPoolTemplates = (payload) => {
   return request({ url: '/settings/account-pool-templates', method: 'put', data: body })
 }
 
+export const saveAccountPoolCustomTemplate = (templateId, template) =>
+  request({
+    url: `/settings/account-pool-templates/custom/${encodeURIComponent(templateId)}`,
+    method: 'put',
+    data: { template },
+  })
+
+export const saveAccountPoolBuiltinFields = (templateId, fields) =>
+  request({
+    url: `/settings/account-pool-templates/builtin/${encodeURIComponent(templateId)}/fields`,
+    method: 'put',
+    data: { fields },
+  })
+
+export const deleteAccountPoolCustomTemplate = (templateId) =>
+  request({
+    url: `/settings/account-pool-templates/custom/${encodeURIComponent(templateId)}`,
+    method: 'delete',
+  })
+
 export const listFeishuBots = () =>
   request({ url: '/settings/feishu/bots', method: 'get' })
 
