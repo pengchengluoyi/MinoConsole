@@ -1,27 +1,63 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
+import { Search } from '@element-plus/icons-vue'
 import { getCaseResourceKeyCatalog } from '@/api/settings'
 import './settings-ui.css'
 
+const LAYER_FALLBACK = [
+  { id: 'precondition', label: '前置' },
+  { id: 'operation', label: '操作' },
+  { id: 'expected', label: '预期' },
+  { id: 'generic', label: '通用' },
+]
+
 const loading = ref(false)
 const catalog = ref(null)
+const keyword = ref('')
+const layer = ref('all')
+const section = ref('all')
+const page = ref(1)
+const pageSize = ref(10)
 
 const sections = computed(() => catalog.value?.sections || [])
+const layers = computed(() => catalog.value?.key_layers || LAYER_FALLBACK)
 const entries = computed(() => catalog.value?.entries || [])
+const prepFlow = computed(() => catalog.value?.prep_flow || null)
 
+const layerLabel = (id) => layers.value.find((x) => x.id === id)?.label || id || '—'
 const sectionLabel = (id) => sections.value.find((s) => s.id === id)?.label || id
 
-const grouped = computed(() => {
-  const map = new Map()
-  for (const row of entries.value) {
-    const sid = row.section || 'other'
-    if (!map.has(sid)) map.set(sid, [])
-    map.get(sid).push(row)
-  }
-  return sections.value
-    .map((s) => ({ section: s, rows: map.get(s.id) || [] }))
-    .filter((g) => g.rows.length)
+const filtered = computed(() => {
+  const q = keyword.value.trim().toLowerCase()
+  return entries.value.filter((row) => {
+    if (layer.value !== 'all' && (row.key_layer || 'precondition') !== layer.value) return false
+    if (section.value !== 'all' && (row.section || '') !== section.value) return false
+    if (!q) return true
+    const blob = [
+      row.write_category,
+      row.claim_path,
+      row.resource,
+      row.dsl,
+      row.runtime,
+      row.key_layer,
+      ...(row.write_examples || []),
+      ...(Array.isArray(row.config_keys) ? row.config_keys : [row.config_keys]),
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+    return blob.includes(q)
+  })
+})
+
+const paged = computed(() => {
+  const start = (page.value - 1) * pageSize.value
+  return filtered.value.slice(start, start + pageSize.value)
+})
+
+watch([keyword, layer, section, pageSize], () => {
+  page.value = 1
 })
 
 const load = async () => {
@@ -44,36 +80,50 @@ onMounted(load)
     <header class="settings-page-header">
       <div>
         <h2 class="settings-page-title">用例密钥</h2>
-        <p class="page-lead page-lead-tight">
-          Claim（锁）→ 用例前置 / <code>meta.resource_key</code> / <code>case_scene</code>；
-          Lease（钥匙）→ 跑批生成，勿写入用例。
+        <p class="settings-page-desc">
+          Claim（锁）写在前置编号行；Lease（钥匙）由跑批生成。
+          设备登录态打机态，账号登录态打号池 session；账号与数据可用「字段名-状态」或直接写状态（如「已配置形象」）。
         </p>
+      </div>
+      <div class="settings-summary-pill is-muted">
+        v{{ catalog?.version || '—' }} · {{ filtered.length }} / {{ entries.length }} 条
       </div>
     </header>
 
-    <section v-if="catalog" class="settings-card case-key-block">
-      <h3 class="case-key-h3">前置编号行</h3>
-      <pre class="case-key-pre">{{ catalog.example_precondition }}</pre>
-      <p class="case-key-meta">
-        落库：<code>{{ catalog.claim_storage?.primary }}</code>；
-        文本编译：<code>{{ catalog.claim_storage?.fallback_compile_from?.join(', ') }}</code>
-      </p>
-    </section>
+    <p v-if="prepFlow" class="case-key-prep">
+      前置流程：
+      <strong v-for="(s, i) in prepFlow.steps || []" :key="s.id">
+        {{ s.label }}<span v-if="i < (prepFlow.steps || []).length - 1"> → </span>
+      </strong>
+      <span class="case-key-prep-drop">（已移除切换测试环境）</span>
+    </p>
+    <pre v-if="catalog?.example_precondition" class="case-key-pre">{{ catalog.example_precondition }}</pre>
 
-    <section v-if="catalog?.example_claim" class="settings-card case-key-block">
-      <h3 class="case-key-h3">resource_key 示例（v{{ catalog.version }})</h3>
-      <pre class="case-key-pre case-key-json">{{ JSON.stringify(catalog.example_claim, null, 2) }}</pre>
-    </section>
+    <div class="settings-toolbar">
+      <el-select v-model="layer" class="filter-item" placeholder="层级">
+        <el-option label="全部层级" value="all" />
+        <el-option v-for="item in layers" :key="item.id" :label="item.label" :value="item.id" />
+      </el-select>
+      <el-select v-model="section" class="filter-item" placeholder="分组">
+        <el-option label="全部分组" value="all" />
+        <el-option v-for="s in sections" :key="s.id" :label="s.label" :value="s.id" />
+      </el-select>
+      <el-input
+        v-model="keyword"
+        class="toolbar-search"
+        clearable
+        placeholder="搜索类别 / 路径 / DSL"
+        :prefix-icon="Search"
+      />
+    </div>
 
-    <section
-      v-for="group in grouped"
-      :key="group.section.id"
-      class="settings-card case-key-block"
-    >
-      <h3 class="case-key-h3">{{ group.section.label }}</h3>
-      <el-table :data="group.rows" size="small" border stripe>
-        <el-table-column prop="write_category" label="前置类别" width="108" />
-        <el-table-column label="写法示例" min-width="160">
+    <section class="settings-table-card">
+      <el-table :data="paged" size="small" border stripe empty-text="无匹配条目">
+        <el-table-column label="层级" width="88">
+          <template #default="{ row }">{{ layerLabel(row.key_layer || 'precondition') }}</template>
+        </el-table-column>
+        <el-table-column prop="write_category" label="类别" width="128" show-overflow-tooltip />
+        <el-table-column label="写法示例" min-width="180">
           <template #default="{ row }">
             <span v-for="(ex, i) in row.write_examples || []" :key="i" class="case-key-ex">
               {{ ex }}<br v-if="i < row.write_examples.length - 1" />
@@ -81,8 +131,8 @@ onMounted(load)
           </template>
         </el-table-column>
         <el-table-column prop="claim_path" label="Claim 路径" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="resource" label="资源对象" width="168" show-overflow-tooltip />
-        <el-table-column prop="config_keys" label="配置 / 字段" min-width="140">
+        <el-table-column prop="resource" label="资源对象" min-width="160" show-overflow-tooltip />
+        <el-table-column label="配置 / 字段" min-width="140">
           <template #default="{ row }">
             <template v-if="Array.isArray(row.config_keys)">
               <span v-for="(k, i) in row.config_keys" :key="k">{{ k }}<br v-if="i < row.config_keys.length - 1" /></span>
@@ -91,56 +141,44 @@ onMounted(load)
           </template>
         </el-table-column>
         <el-table-column prop="dsl" label="DSL / 枚举" min-width="160" show-overflow-tooltip />
-        <el-table-column prop="runtime" label="跑批" min-width="140" show-overflow-tooltip />
+        <el-table-column prop="runtime" label="跑批" min-width="160" show-overflow-tooltip />
+        <el-table-column label="分组" width="120" show-overflow-tooltip>
+          <template #default="{ row }">{{ sectionLabel(row.section) }}</template>
+        </el-table-column>
       </el-table>
-    </section>
-
-    <section v-if="catalog?.lease_storage" class="settings-card case-key-block">
-      <h3 class="case-key-h3">{{ sectionLabel('lease') }}</h3>
-      <p class="case-key-meta">{{ catalog.lease_storage.note }}</p>
-      <ul class="case-key-list">
-        <li v-for="f in catalog.lease_storage.ctx_fields || []" :key="f"><code>{{ f }}</code></li>
-      </ul>
+      <el-pagination
+        class="settings-table-pager"
+        v-model:current-page="page"
+        v-model:page-size="pageSize"
+        :total="filtered.length"
+        :page-sizes="[10, 20, 50]"
+        layout="total, sizes, prev, pager, next"
+        background
+        small
+      />
     </section>
   </div>
 </template>
 
 <style scoped>
-.case-key-page .page-lead-tight {
-  margin-top: 4px;
-  font-size: 13px;
+.case-key-prep {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--el-text-color-regular);
 }
-.case-key-block {
-  margin-bottom: 16px;
-}
-.case-key-h3 {
-  margin: 0 0 10px;
-  font-size: 14px;
-  font-weight: 600;
+.case-key-prep-drop {
+  margin-left: 6px;
+  color: var(--el-text-color-secondary);
 }
 .case-key-pre {
-  margin: 0;
-  padding: 12px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
   font-size: 12px;
   line-height: 1.5;
   background: var(--el-fill-color-light);
   border-radius: 6px;
   white-space: pre-wrap;
   word-break: break-word;
-}
-.case-key-json {
-  max-height: 360px;
-  overflow: auto;
-}
-.case-key-meta {
-  margin: 10px 0 0;
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
-}
-.case-key-list {
-  margin: 8px 0 0;
-  padding-left: 1.2em;
-  font-size: 12px;
 }
 .case-key-ex {
   font-size: 12px;

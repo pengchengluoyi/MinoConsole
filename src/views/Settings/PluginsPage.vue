@@ -10,8 +10,6 @@ import {
   normalizePluginCat,
   pluginCategories,
   pluginInCategory,
-  statusLabel,
-  statusType,
 } from '@/utils/pluginCategories'
 import './settings-ui.css'
 
@@ -21,7 +19,7 @@ const plugins = ref([])
 const cat = ref('all')
 
 const visible = computed(() => plugins.value.filter((row) => pluginInCategory(row, cat.value)))
-const readyCount = computed(() => visible.value.filter((p) => p.status === 'ready').length)
+const enabledCount = computed(() => visible.value.filter((p) => p.enabled !== false).length)
 
 const load = async () => {
   loading.value = true
@@ -50,7 +48,7 @@ onMounted(load)
       <div>
         <h2 class="settings-page-title">插件策略</h2>
       </div>
-      <div class="settings-summary-pill">{{ readyCount }} 个已连接</div>
+      <div class="settings-summary-pill">{{ enabledCount }} 个已启用</div>
     </header>
 
     <div class="settings-tabbar is-compact">
@@ -88,9 +86,11 @@ onMounted(load)
             {{ pluginCategories(row).map(categoryLabel).join(' · ') || '—' }}
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="100">
+        <el-table-column label="策略" width="100">
           <template #default="{ row }">
-            <el-tag size="small" :type="statusType(row)">{{ statusLabel(row) }}</el-tag>
+            <el-tag size="small" :type="row.enabled !== false ? 'success' : 'info'">
+              {{ row.enabled !== false ? '启用' : '关闭' }}
+            </el-tag>
           </template>
         </el-table-column>
         <el-table-column label="说明" min-width="220" show-overflow-tooltip>
