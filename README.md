@@ -22,7 +22,7 @@ npm run dev
 | 概览 | 工作台、运行状态 | `/dashboard` `/system` |
 | 资产 | 项目与应用（只读） | `/catalog` |
 | 人员与权限 | 成员、权限说明、操作记录 | `/members` `/access` `/audit` |
-| 产品配置 | 技能、角色、编排、扩展包、发信 | `/skills` `/roles` `/stack` `/packs` `/mail` |
+| 产品配置 | 技能、角色、编排 | `/skills` `/roles` `/stack` |
 
 增删项目、用例、模型密钥、插件、Scout 安装与启动都在 **Mino Studio**。Console 的项目与应用页只读 `GET /project/list`。
 

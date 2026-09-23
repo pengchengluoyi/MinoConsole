@@ -8,17 +8,14 @@ import Login from '../views/Login/index.vue'
 
 const AdminLayout = () => import('../layouts/AdminLayout.vue')
 const Dashboard = () => import('../views/Dashboard/index.vue')
-const AccountsPage = () => import('../views/Settings/AccountsPage.vue')
 const PermissionsPage = () => import('../views/Permissions/index.vue')
 const AuditPage = () => import('../views/Audit/index.vue')
 const RolesPage = () => import('../views/Settings/RolesPage.vue')
 const SkillsPage = () => import('../views/Settings/SkillsPage.vue')
 const JobsPage = () => import('../views/Settings/JobsPage.vue')
-const PacksPage = () => import('../views/Settings/PacksPage.vue')
 const KnowledgePage = () => import('../views/Knowledge/index.vue')
 const DocLibraryPage = () => import('../views/DocLibrary/index.vue')
 const AppIntelPage = () => import('../views/AppIntel/index.vue')
-const KeysPage = () => import('../views/Settings/KeysPage.vue')
 const SystemPage = () => import('../views/Settings/SystemPage.vue')
 const AccountPoolTemplatesPage = () => import('../views/Settings/AccountPoolTemplatesPage.vue')
 const CaseResourceKeyPage = () => import('../views/Settings/CaseResourceKeyPage.vue')
@@ -33,8 +30,6 @@ const CatalogAppKnowledge = () => import('../views/Catalog/AppKnowledge.vue')
 const CatalogAppDocs = () => import('../views/Catalog/AppDocs.vue')
 const CatalogAppIntel = () => import('../views/Catalog/AppIntel.vue')
 const NodesPage = () => import('../views/Catalog/NodesPage.vue')
-const PluginsPage = () => import('../views/Settings/PluginsPage.vue')
-const PluginDetail = () => import('../views/Settings/PluginDetailPage.vue')
 
 const keepQuery = (path) => (to) => ({ path, query: to.query })
 
@@ -100,7 +95,6 @@ const routes = [
         component: ResourceTransitionRulesPage,
         meta: { title: '转移规则' },
       },
-      { path: 'members', name: 'Members', component: AccountsPage, meta: { title: '成员' } },
       { path: 'permissions', name: 'Permissions', component: PermissionsPage, meta: { title: '权限配置' } },
       { path: 'access', redirect: { path: '/permissions', query: { tab: 'matrix' } } },
       { path: 'audit', name: 'Audit', component: AuditPage, meta: { title: '操作记录' } },
@@ -119,20 +113,17 @@ const routes = [
         },
       },
       { path: 'stack', name: 'Stack', component: LayerStack, meta: { title: '编排' } },
-      { path: 'packs', name: 'Packs', component: PacksPage, meta: { title: '扩展包' } },
       { path: 'knowledge', name: 'Knowledge', component: KnowledgePage, meta: { title: '知识审核' } },
       { path: 'doc-library', name: 'DocLibrary', component: DocLibraryPage, meta: { title: '文档库' } },
       { path: 'app-intel', name: 'AppIntel', component: AppIntelPage, meta: { title: '信息基座' } },
-      { path: 'mail', name: 'Mail', component: KeysPage, meta: { title: '发信' } },
-      { path: 'plugins', name: 'Plugins', component: PluginsPage, meta: { title: '插件策略' } },
-      { path: 'plugins/:pluginId', name: 'PluginDetail', component: PluginDetail, meta: { title: '插件策略' } },
       { path: 'health', name: 'Health', component: SystemPage, meta: { title: '运行状态' } },
       { path: 'system', redirect: '/health' },
       { path: 'network', name: 'Network', component: NetworkPage, meta: { title: '网络 / 内网域名' } },
       { path: 'scout', redirect: '/dashboard' },
       { path: 'settings', redirect: '/dashboard' },
       { path: 'settings/overview', redirect: '/dashboard' },
-      { path: 'settings/accounts', redirect: '/members' },
+      { path: 'members', redirect: '/dashboard' },
+      { path: 'settings/accounts', redirect: '/dashboard' },
       {
         path: 'settings/roles',
         redirect: (to) => (
@@ -144,11 +135,15 @@ const routes = [
       { path: 'settings/stack', redirect: '/stack' },
       { path: 'settings/skills', redirect: (to) => ({ path: '/skills', query: { skill: to.query.skill || undefined } }) },
       { path: 'settings/jobs', redirect: (to) => ({ path: '/jobs', query: { job: to.query.job || undefined } }) },
-      { path: 'settings/packs', redirect: keepQuery('/packs') },
+      { path: 'packs', redirect: '/dashboard' },
+      { path: 'settings/packs', redirect: '/dashboard' },
       { path: 'settings/knowledge', redirect: '/knowledge' },
       { path: 'settings/doc-library', redirect: () => redirectToCatalogAppTab('docs') },
       { path: 'settings/app-intel', redirect: () => redirectToCatalogAppTab('intel') },
-      { path: 'settings/keys', redirect: '/mail' },
+      { path: 'mail', redirect: '/dashboard' },
+      { path: 'plugins', redirect: '/dashboard' },
+      { path: 'plugins/:pluginId', redirect: '/dashboard' },
+      { path: 'settings/keys', redirect: '/dashboard' },
       { path: 'settings/system', redirect: '/health' },
     ],
   },

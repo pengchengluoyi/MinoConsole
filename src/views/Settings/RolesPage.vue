@@ -237,7 +237,7 @@ onMounted(async () => {
       <span>→</span>
       <router-link to="/skills">技能 · 做什么</router-link>
       <span>→</span>
-      <router-link to="/packs">扩展包</router-link>
+      <span>扩展包（Studio）</span>
     </p>
 
     <div class="roles-split">

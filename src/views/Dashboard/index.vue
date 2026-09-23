@@ -1,13 +1,11 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { listAuthUsers } from '@/api/auth'
 import { getHealthHttp, getMeBootstrap, getServerInfoHttp } from '@/api/me'
-import { listPackKinds } from '@/api/packs'
 import { listProjects } from '@/api/project'
 import { inventoryOf, parseProjectList } from '@/utils/catalog'
 import { listRuntimeNodes, parseRuntimeNodes } from '@/api/runtime'
-import { getMailSettings, listAISkills } from '@/api/settings'
+import { listAISkills } from '@/api/settings'
 import { getRuntimeStatusHttp } from '@/api/system'
 import { pingServer, nexusOrigin, usesWebProxy } from '@/utils/config'
 import { roleLabel } from '@/utils/iam'
@@ -22,11 +20,7 @@ const error = ref('')
 const reachable = ref(false)
 const version = ref('')
 const identity = ref(null)
-const userCount = ref(null)
 const nodeCount = ref(null)
-const mailConfigured = ref(null)
-const packKindCount = ref(null)
-const packItemCount = ref(null)
 const roleCount = ref(null)
 const catalogInventory = ref(null)
 const origin = computed(() => (usesWebProxy() ? window.location.origin : nexusOrigin()))
@@ -61,21 +55,15 @@ onMounted(async () => {
 
     const [
       me,
-      users,
       nodes,
       runtime,
-      mail,
-      kinds,
       roles,
       health,
       catalog,
     ] = await Promise.all([
       settle(getMeBootstrap),
-      settle(listAuthUsers),
       settle(listRuntimeNodes),
       settle(getRuntimeStatusHttp),
-      settle(getMailSettings),
-      settle(listPackKinds),
       settle(listAISkills),
       settle(getHealthHttp),
       settle(listProjects),
@@ -84,20 +72,12 @@ onMounted(async () => {
     if (me.ok) identity.value = me.value?.data || null
     else identity.value = session.user
 
-    if (users.ok) userCount.value = (users.value?.data?.users || []).length
-
     if (nodes.ok) nodeCount.value = parseRuntimeNodes(nodes.value).length
     else if (runtime.ok) {
       const data = runtime.value?.data || {}
       nodeCount.value = Array.isArray(data.nodes) ? data.nodes.length : (typeof data.node_count === 'number' ? data.node_count : null)
     }
 
-    if (mail.ok) mailConfigured.value = !!mail.value?.data?.configured
-    if (kinds.ok) {
-      const list = kinds.value?.data?.kinds || []
-      packKindCount.value = list.length
-      packItemCount.value = list.reduce((sum, row) => sum + Number(row.count || 0), 0)
-    }
     if (roles.ok) {
       const data = roles.value?.data || {}
       roleCount.value = data.counts?.skills ?? (data.skills || []).length
@@ -142,29 +122,14 @@ onMounted(async () => {
         <p>项目 / 应用</p>
       </article>
       <article class="settings-card dash-stat">
-        <div class="settings-kicker">成员</div>
-        <strong>{{ stat(userCount) }}</strong>
-        <p>来自 GET /auth/users</p>
-      </article>
-      <article class="settings-card dash-stat">
         <div class="settings-kicker">Scout 节点</div>
         <strong>{{ stat(nodeCount) }}</strong>
         <p>来自 GET /runtime/nodes</p>
-      </article>
-      <article class="settings-card dash-stat">
-        <div class="settings-kicker">发信</div>
-        <strong>{{ mailConfigured == null ? '—' : (mailConfigured ? '已配置' : '未配置') }}</strong>
-        <p>来自 GET /settings/mail</p>
       </article>
       <article class="settings-card dash-stat is-link" @click="router.push('/skills')">
         <div class="settings-kicker">技能</div>
         <strong>{{ stat(roleCount) }}</strong>
         <p>做什么、prompt 和 SOP</p>
-      </article>
-      <article class="settings-card dash-stat is-link" @click="router.push('/packs')">
-        <div class="settings-kicker">扩展包</div>
-        <strong>{{ packKindCount == null ? '—' : `${packKindCount} 类` }}</strong>
-        <p>{{ packItemCount == null ? '能调用的 function' : `共 ${packItemCount} 条 function` }}</p>
       </article>
     </section>
 
@@ -173,12 +138,6 @@ onMounted(async () => {
       <div class="dash-actions">
         <button type="button" class="settings-action-pill" @click="router.push('/catalog')">
           查看项目与应用<span class="settings-action-arrow">→</span>
-        </button>
-        <button type="button" class="settings-action-pill" @click="router.push('/members')">
-          管理成员<span class="settings-action-arrow">→</span>
-        </button>
-        <button type="button" class="settings-action-pill" @click="router.push('/mail')">
-          配置发信<span class="settings-action-arrow">→</span>
         </button>
         <button type="button" class="settings-action-pill" @click="router.push('/skills')">
           编辑技能<span class="settings-action-arrow">→</span>

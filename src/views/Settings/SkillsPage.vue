@@ -444,8 +444,7 @@ onUnmounted(() => {
           <router-link to="/roles">角色</router-link>
           决定谁能派出这条技能，
           <router-link to="/stack">编排</router-link>
-          决定哪个入口会选中那个角色。设备 function 在
-          <router-link to="/packs">扩展包</router-link>。
+          决定哪个入口会选中那个角色。设备 function 在 Mino Studio 维护的扩展包。
         </p>
       </div>
       <div class="settings-summary-pill">{{ allSkills.length }} 项技能</div>
@@ -458,7 +457,7 @@ onUnmounted(() => {
       <span>→</span>
       <em>技能 · 做什么</em>
       <span>→</span>
-      <router-link to="/packs">扩展包</router-link>
+      <span class="muted-inline">扩展包 · Studio</span>
     </p>
 
     <div class="skills-workspace">

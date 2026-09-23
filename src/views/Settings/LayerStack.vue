@@ -168,7 +168,7 @@ onMounted(load)
       <span>→</span>
       <router-link to="/skills">技能 · 做什么</router-link>
       <span>→</span>
-      <router-link to="/packs">扩展包 / 手</router-link>
+      <span>扩展包 / 手（Studio）</span>
     </p>
 
     <p v-if="!loading && !(stack.triggers || []).length" class="settings-page-desc">暂无数据</p>

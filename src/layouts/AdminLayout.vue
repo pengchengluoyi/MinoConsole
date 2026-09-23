@@ -2,8 +2,8 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
-  DataBoard, User, Avatar, Files, Share, Message, Monitor, Menu,
-  Lock, Document, Collection, Connection, Cpu, Link, Notebook, Guide, Key,
+  DataBoard, User, Share, Monitor, Menu,
+  Lock, Document, Collection, Cpu, Link, Notebook, Guide, Key,
 } from '@element-plus/icons-vue'
 import { useSessionStore } from '@/store/session'
 import { roleLabel } from '@/utils/iam'
@@ -39,7 +39,6 @@ const groups = [
     id: 'perms',
     label: '权限',
     items: [
-      { id: 'members', label: '成员', icon: Avatar, to: '/members' },
       { id: 'permissions', label: '权限配置', icon: Lock, to: '/permissions' },
       { id: 'audit', label: '操作记录', icon: Document, to: '/audit' },
     ],
@@ -52,16 +51,13 @@ const groups = [
       { id: 'jobs', label: 'Jobs', icon: Document, to: '/jobs' },
       { id: 'roles', label: '角色', icon: User, to: '/roles' },
       { id: 'stack', label: '编排', icon: Share, to: '/stack' },
-      { id: 'packs', label: '扩展包', icon: Files, to: '/packs' },
       { id: 'knowledge', label: '知识审核', icon: Notebook, to: '/knowledge' },
-      { id: 'plugins', label: '插件策略', icon: Connection, to: '/plugins' },
     ],
   },
   {
     id: 'system',
     label: '系统',
     items: [
-      { id: 'mail', label: '发信', icon: Message, to: '/mail' },
       { id: 'network', label: '网络 / 内网域名', icon: Link, to: '/network' },
     ],
   },
@@ -88,9 +84,6 @@ const isActive = (item) => {
   }
   if (item.id === 'resource-transition-rules') {
     return route.path === '/resource-transition-rules'
-  }
-  if (item.id === 'plugins') {
-    return route.path === '/plugins' || route.path.startsWith('/plugins/')
   }
   if (item.id === 'health') {
     return route.path === '/health' || route.path === '/system'
