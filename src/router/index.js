@@ -22,6 +22,8 @@ const CaseResourceKeyPage = () => import('../views/Settings/CaseResourceKeyPage.
 const ResourceTransitionRulesPage = () => import('../views/Settings/ResourceTransitionRulesPage.vue')
 const NetworkPage = () => import('../views/Network/index.vue')
 const LayerStack = () => import('../views/Settings/LayerStack.vue')
+const FlowBlocksPage = () => import('../views/Settings/FlowBlocksPage.vue')
+const PacksPage = () => import('../views/Settings/PacksPage.vue')
 const CatalogPage = () => import('../views/Catalog/index.vue')
 const CatalogProject = () => import('../views/Catalog/ProjectPage.vue')
 const CatalogAppShell = () => import('../views/Catalog/AppShell.vue')
@@ -113,6 +115,8 @@ const routes = [
         },
       },
       { path: 'stack', name: 'Stack', component: LayerStack, meta: { title: '编排' } },
+      { path: 'flow-blocks', name: 'FlowBlocks', component: FlowBlocksPage, meta: { title: 'FSM 逻辑块' } },
+      { path: 'packs', name: 'Packs', component: PacksPage, meta: { title: '扩展包' } },
       { path: 'knowledge', name: 'Knowledge', component: KnowledgePage, meta: { title: '知识审核' } },
       { path: 'doc-library', name: 'DocLibrary', component: DocLibraryPage, meta: { title: '文档库' } },
       { path: 'app-intel', name: 'AppIntel', component: AppIntelPage, meta: { title: '信息基座' } },
@@ -133,10 +137,10 @@ const routes = [
         ),
       },
       { path: 'settings/stack', redirect: '/stack' },
+      { path: 'settings/flow-blocks', redirect: '/flow-blocks' },
       { path: 'settings/skills', redirect: (to) => ({ path: '/skills', query: { skill: to.query.skill || undefined } }) },
       { path: 'settings/jobs', redirect: (to) => ({ path: '/jobs', query: { job: to.query.job || undefined } }) },
-      { path: 'packs', redirect: '/dashboard' },
-      { path: 'settings/packs', redirect: '/dashboard' },
+      { path: 'settings/packs', redirect: '/packs' },
       { path: 'settings/knowledge', redirect: '/knowledge' },
       { path: 'settings/doc-library', redirect: () => redirectToCatalogAppTab('docs') },
       { path: 'settings/app-intel', redirect: () => redirectToCatalogAppTab('intel') },

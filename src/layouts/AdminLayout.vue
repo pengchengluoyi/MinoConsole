@@ -51,6 +51,8 @@ const groups = [
       { id: 'jobs', label: 'Jobs', icon: Document, to: '/jobs' },
       { id: 'roles', label: '角色', icon: User, to: '/roles' },
       { id: 'stack', label: '编排', icon: Share, to: '/stack' },
+      { id: 'packs', label: '扩展包', icon: Collection, to: '/packs' },
+      { id: 'flow-blocks', label: 'FSM 逻辑块', icon: Guide, to: '/flow-blocks' },
       { id: 'knowledge', label: '知识审核', icon: Notebook, to: '/knowledge' },
     ],
   },
@@ -72,6 +74,12 @@ const isActive = (item) => {
   }
   if (item.id === 'roles') {
     return route.path === '/roles' || route.path.startsWith('/roles/')
+  }
+  if (item.id === 'flow-blocks') {
+    return route.path === '/flow-blocks'
+  }
+  if (item.id === 'packs') {
+    return route.path === '/packs' || route.path.startsWith('/packs/')
   }
   if (item.id === 'catalog') {
     return route.path === '/catalog' || route.path.startsWith('/catalog/')

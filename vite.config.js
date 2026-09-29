@@ -4,7 +4,7 @@ import vue from '@vitejs/plugin-vue'
 
 const NEXUS = (process.env.VITE_NEXUS_URL || 'http://mino.local:10104').replace(/\/$/, '')
 const API_HTTP_PREFIXES = [
-  '/auth', '/sys', '/static', '/settings', '/packs', '/api', '/device',
+  '/auth', '/sys', '/static', '/settings', '/packs', '/flow-blocks', '/nav-fsm', '/api', '/device',
   '/runtime', '/me', '/health', '/project',
 ]
 

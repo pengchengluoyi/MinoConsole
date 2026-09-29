@@ -123,6 +123,7 @@ onMounted(load)
           <template #default="{ row }">{{ layerLabel(row.key_layer || 'precondition') }}</template>
         </el-table-column>
         <el-table-column prop="write_category" label="类别" width="128" show-overflow-tooltip />
+        <el-table-column prop="key_ref" label="key_ref" min-width="160" show-overflow-tooltip />
         <el-table-column label="写法示例" min-width="180">
           <template #default="{ row }">
             <span v-for="(ex, i) in row.write_examples || []" :key="i" class="case-key-ex">

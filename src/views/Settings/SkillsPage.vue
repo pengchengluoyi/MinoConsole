@@ -78,9 +78,20 @@ const VIEW_LABEL = {
 }
 const PHASE_LABEL = { prep: '前置', do: '操作', check: '校验' }
 const KIND_LABEL = { prep: '前置', do: '操作', check: '校验', generic: '通用', recovery: '恢复' }
+const PHASE_JOB_LABEL = {
+  'agent-vision-plan': '看图规划',
+  'agent-vision-exec': '看图执行',
+  'agent-vision-assert': '看图校验',
+  'agent-decide': '看图决策',
+}
+const ADVANCE_ON_LABEL = {
+  milestones: '里程碑聚合',
+  signal_done: 'signal_done（旧）',
+  assert_pass: '校验通过',
+}
+const DEFAULT_PHASE_IDS = ['prep', 'do', 'check']
 
 const SKILL_JOB_MAP = {
-  'run-case': 'agent-decide',
   analyze_req: 'analyze_req',
   draft_mindmap: 'draft_mindmap',
   draft_cases: 'draft_cases',
@@ -97,7 +108,10 @@ const SKILL_JOB_MAP = {
   'product-expert': 'product-expert',
 }
 
-const linkedJobId = (skill) => SKILL_JOB_MAP[skill?.id] || ''
+const linkedJobId = (skill) => {
+  if (skill?.id === 'run-case') return ''
+  return SKILL_JOB_MAP[skill?.id] || ''
+}
 
 const route = useRoute()
 const router = useRouter()
@@ -175,10 +189,45 @@ const categoryFilters = computed(() => {
 })
 
 const selectedSkill = computed(() => allSkills.value.find((row) => row.id === selectedId.value) || null)
-const selectedSkillPhases = computed(() => {
-  const phases = selectedSkill.value?.sop?.phases
-  return (Array.isArray(phases) && phases.length) ? phases : ['prep', 'do', 'check']
+
+const normalizeSopPhase = (item, fallbackId) => {
+  const base = {
+    id: fallbackId,
+    job: 'agent-decide',
+    exec_job: '',
+    advance_on: 'signal_done',
+    tool_kinds: [],
+    guards: [],
+  }
+  if (typeof item === 'string') return { ...base, id: item }
+  if (item && typeof item === 'object') {
+    return { ...base, ...item, id: String(item.id || fallbackId) }
+  }
+  return base
+}
+
+const agentSopPhases = computed(() => {
+  const raw = selectedSkill.value?.sop?.phases
+  if (!Array.isArray(raw) || !raw.length) {
+    return DEFAULT_PHASE_IDS.map((id) => normalizeSopPhase(id, id))
+  }
+  return raw.map((item, idx) => normalizeSopPhase(item, DEFAULT_PHASE_IDS[idx] || 'do'))
 })
+
+const selectedSkillPhases = computed(() => agentSopPhases.value.map((p) => p.id))
+
+const runCaseJobIds = computed(() => {
+  if (selectedSkill.value?.id !== 'run-case') return []
+  const ids = new Set()
+  for (const p of agentSopPhases.value) {
+    if (p.job) ids.add(p.job)
+    if (p.exec_job) ids.add(p.exec_job)
+  }
+  return [...ids].sort()
+})
+
+const phaseJobLabel = (jid) => PHASE_JOB_LABEL[jid] || jid || '—'
+const advanceOnLabel = (id) => ADVANCE_ON_LABEL[id] || id || '—'
 const selectedViewId = computed(() => skillViewId(selectedSkill.value))
 const selectedOwnerRole = computed(() => {
   const row = selectedSkill.value
@@ -357,6 +406,15 @@ const patchSop = (key, value) => {
   if (!row) return
   row.sop = { ...(row.sop || {}), [key]: value }
   saveSkillDoc({ sop: row.sop })
+}
+
+const updateAgentPhase = (phaseId, patch) => {
+  const row = selectedSkill.value
+  if (!row) return
+  const phases = agentSopPhases.value.map((p) => (
+    p.id === phaseId ? { ...p, ...patch } : { ...p }
+  ))
+  patchSop('phases', phases)
 }
 
 const patchInputType = (type) => {
@@ -589,13 +647,81 @@ onUnmounted(() => {
                   <em>{{ phaseLabel(id) }}</em>
                 </template>
               </div>
-              <div class="skill-sop-grid">
-                <label>
+              <p v-if="selectedSkill.id === 'run-case'" class="skill-block-note sop-orchestration-hint">
+                阶段编排决定跑用例时调哪些 Job、扩展包范围、如何收工。
+                <strong>规划 Job</strong> 每轮出里程碑；<strong>执行 Job</strong> 出单步设备能力（校验阶段为批量 assert）。
+                收工选「里程碑聚合」时由程序按里程碑流转，不采纳模型 signal_done。
+              </p>
+              <div class="phase-orchestration">
+                <div class="phase-orchestration-head">
                   <span>阶段</span>
-                  <el-select :model-value="selectedSkill.sop?.phases" multiple collapse-tags size="small" @change="(v) => patchSop('phases', v)">
-                    <el-option v-for="id in ['prep', 'do', 'check']" :key="id" :label="phaseLabel(id)" :value="id" />
+                  <span>规划 Job</span>
+                  <span>执行 Job</span>
+                  <span>收工</span>
+                  <span>本阶段扩展包</span>
+                </div>
+                <div
+                  v-for="p in agentSopPhases"
+                  :key="p.id"
+                  class="phase-orchestration-row"
+                >
+                  <strong class="phase-name">{{ phaseLabel(p.id) }}</strong>
+                  <el-select
+                    :model-value="p.job"
+                    size="small"
+                    @change="(v) => updateAgentPhase(p.id, { job: v })"
+                  >
+                    <el-option
+                      v-for="jid in (enums.phase_jobs || ['agent-decide'])"
+                      :key="jid"
+                      :label="phaseJobLabel(jid)"
+                      :value="jid"
+                    />
                   </el-select>
-                </label>
+                  <el-select
+                    :model-value="p.exec_job || ''"
+                    size="small"
+                    clearable
+                    placeholder="（可选）"
+                    @change="(v) => updateAgentPhase(p.id, { exec_job: v || '' })"
+                  >
+                    <el-option
+                      v-for="jid in (enums.phase_jobs || ['agent-decide'])"
+                      :key="`ex-${jid}`"
+                      :label="phaseJobLabel(jid)"
+                      :value="jid"
+                    />
+                  </el-select>
+                  <el-select
+                    :model-value="p.advance_on || 'signal_done'"
+                    size="small"
+                    @change="(v) => updateAgentPhase(p.id, { advance_on: v })"
+                  >
+                    <el-option
+                      v-for="aid in (enums.advance_on || ['milestones', 'signal_done'])"
+                      :key="aid"
+                      :label="advanceOnLabel(aid)"
+                      :value="aid"
+                    />
+                  </el-select>
+                  <el-select
+                    :model-value="p.tool_kinds || []"
+                    multiple
+                    collapse-tags
+                    collapse-tags-tooltip
+                    size="small"
+                    @change="(v) => updateAgentPhase(p.id, { tool_kinds: v })"
+                  >
+                    <el-option
+                      v-for="kid in (enums.tool_kinds || ['prep', 'do', 'check', 'generic', 'recovery'])"
+                      :key="kid"
+                      :label="kindLabel(kid)"
+                      :value="kid"
+                    />
+                  </el-select>
+                </div>
+              </div>
+              <div class="skill-sop-grid">
                 <label>
                   <span>指针</span>
                   <el-select :model-value="selectedSkill.sop?.pointer" size="small" @change="(v) => patchSop('pointer', v)">
@@ -603,7 +729,7 @@ onUnmounted(() => {
                   </el-select>
                 </label>
                 <label>
-                  <span>工具范围</span>
+                  <span>全局扩展包</span>
                   <el-select :model-value="selectedSkill.sop?.tool_kinds" multiple collapse-tags size="small" @change="(v) => patchSop('tool_kinds', v)">
                     <el-option v-for="id in (enums.tool_kinds || ['prep', 'do', 'check', 'generic', 'recovery'])" :key="id" :label="kindLabel(id)" :value="id" />
                   </el-select>
@@ -638,7 +764,20 @@ onUnmounted(() => {
           </section>
 
           <section class="settings-card skill-block skill-prompt">
-            <div v-if="linkedJobId(selectedSkill)" class="job-link-banner">
+            <div v-if="selectedSkill.id === 'run-case' && runCaseJobIds.length" class="job-link-banner">
+              <p>跑用例的 prompt 在 <strong>Jobs</strong> 按阶段 Job 维护（与上表编排一致）。</p>
+              <div class="job-link-row">
+                <router-link
+                  v-for="jid in runCaseJobIds"
+                  :key="jid"
+                  :to="{ path: '/jobs', query: { job: jid } }"
+                  class="settings-action-pill"
+                >
+                  {{ phaseJobLabel(jid) }}<span class="settings-action-arrow">→</span>
+                </router-link>
+              </div>
+            </div>
+            <div v-else-if="linkedJobId(selectedSkill)" class="job-link-banner">
               <p>此技能的 prompt 在 <strong>Jobs</strong> 里维护（{{ linkedJobId(selectedSkill) }}）。</p>
               <router-link :to="{ path: '/jobs', query: { job: linkedJobId(selectedSkill) } }" class="settings-action-pill">
                 打开 Jobs<span class="settings-action-arrow">→</span>
@@ -754,6 +893,63 @@ onUnmounted(() => {
   background: rgba(64, 158, 255, 0.08);
 }
 .job-link-banner p { margin: 0; font-size: 13px; }
+
+.job-link-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sop-orchestration-hint {
+  margin: 0 0 12px;
+  line-height: 1.55;
+}
+
+.phase-orchestration {
+  margin: 0 0 16px;
+  border: 1px solid var(--settings-border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.phase-orchestration-head,
+.phase-orchestration-row {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+}
+
+.phase-orchestration-head {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--settings-muted);
+  background: var(--settings-soft);
+  border-bottom: 1px solid var(--settings-border);
+}
+
+.phase-orchestration-row + .phase-orchestration-row {
+  border-top: 1px solid var(--settings-border);
+}
+
+.phase-orchestration-row .phase-name {
+  font-size: 13px;
+  color: #047857;
+}
+
+@media (max-width: 960px) {
+  .phase-orchestration-head {
+    display: none;
+  }
+
+  .phase-orchestration-row {
+    grid-template-columns: 1fr;
+  }
+}
 
 .roles-page {
   display: flex;

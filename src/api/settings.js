@@ -4,6 +4,9 @@ import { recordAudit } from '@/utils/auditLog'
 export const getCaseResourceKeyCatalog = () =>
   request({ url: '/settings/case-resource-key', method: 'get' })
 
+export const getCaseResourceKeyRegistry = (params = {}) =>
+  request({ url: '/settings/case-resource-key/registry', method: 'get', params })
+
 export const getResourceTransitionRules = () =>
   request({ url: '/settings/resource-transition-rules', method: 'get' })
 
