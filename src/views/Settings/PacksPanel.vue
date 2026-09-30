@@ -34,6 +34,15 @@ const CATEGORY_OPTIONS = [
 ]
 const CREATABLE_KINDS = new Set(['recovery'])
 
+const recoveryText = (row) => {
+  const rec = row?.payload?.recovery
+  if (rec && typeof rec === 'object') {
+    return rec.summary || rec.next_cap || '—'
+  }
+  if (typeof rec === 'string' && rec.trim()) return rec
+  return '—'
+}
+
 const route = useRoute()
 
 const loading = ref(false)
@@ -358,6 +367,9 @@ const onDrawerChanged = async (item) => {
         </el-table-column>
         <el-table-column label="说明" min-width="200" show-overflow-tooltip>
           <template #default="{ row }">{{ row.when || row.summary || '—' }}</template>
+        </el-table-column>
+        <el-table-column v-if="activeKind === 'base'" label="恢复方案" min-width="240" show-overflow-tooltip>
+          <template #default="{ row }">{{ recoveryText(row) }}</template>
         </el-table-column>
         <el-table-column label="状态" width="88">
           <template #default="{ row }">

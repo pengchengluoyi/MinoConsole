@@ -51,6 +51,7 @@ const PAYLOAD_LABEL = {
   caller: 'caller',
   returns: 'returns',
   when: 'when',
+  recovery: '恢复方案',
   mode: 'mode',
   match: 'match',
   actions: 'actions',
